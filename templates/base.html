@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html class="light" lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>{% block title %}Estim Library{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Merriweather:wght@400;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#755b00",
+                    "primary-container": "#f2c230",
+                    "on-primary-container": "#685000",
+                    "secondary": "#006d34",
+                    "secondary-container": "#85f7a2",
+                    "on-secondary-container": "#007237",
+                    "tertiary": "#745853",
+                    "background": "#faf9f6",
+                    "on-background": "#1a1c1a",
+                    "surface": "#faf9f6",
+                    "on-surface": "#1a1c1a",
+                    "surface-variant": "#e3e2e0",
+                    "on-surface-variant": "#4e4634",
+                    "outline": "#807661",
+                    "outline-variant": "#d1c5ad",
+                    "error": "#ba1a1a",
+                    "success": "#006d34",
+            },
+            "spacing": {
+                    "margin-desktop": "64px",
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        :root {
+            --primary: #755b00;
+            --secondary: #006d34;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .african-pattern-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 40V0l20 20zm0 0l20 20V0L20 20z' fill='%23006d34' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body {
+            background-color: #faf9f6;
+            color: #1a1c1a;
+            font-family: 'Merriweather', serif;
+            min-height: 100dvh;
+            scroll-behavior: smooth;
+        }
+        h1, h2, h3, h4, h5, h6, button, .font-montserrat {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .card-shadow {
+            box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+        }
+        .card-shadow-hover:hover {
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="antialiased selection:bg-primary-container selection:text-on-primary-container">
+    <!-- TopAppBar -->
+    <header class="glass-effect border-b border-outline-variant/30 sticky top-0 z-50 transition-all duration-300">
+        <div class="flex justify-between items-center px-margin-mobile h-16 w-full max-w-screen-xl mx-auto">
+            <div class="flex items-center gap-4">
+                <a href="/" class="group flex items-center gap-3">
+                    <div class="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20 rotate-3 group-hover:rotate-0 transition-all duration-300">
+                        <span class="material-symbols-outlined text-sm">auto_stories</span>
+                    </div>
+                    <h1 class="text-headline-md font-extrabold tracking-tight text-on-background">Estim <span class="text-primary">Library</span></h1>
+                </a>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <nav class="hidden lg:flex items-center gap-8">
+                {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+                    <!-- Staff Navigation -->
+                    <a href="{% url 'reservations:librarian_dashboard' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'librarian_dashboard' %}text-secondary{% else %}text-on-surface-variant hover:text-secondary{% endif %} transition-colors uppercase tracking-widest flex items-center gap-2 relative">
+                        <span class="material-symbols-outlined text-sm">dashboard</span>
+                        Dashboard
+                        {% if pending_res_count > 0 %}
+                            <span class="absolute -top-1 -right-4 flex h-4 w-4">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-4 w-4 bg-error text-[8px] text-white items-center justify-center font-black">{{ pending_res_count }}</span>
+                            </span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'books:manage_books' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'manage_books' %}text-secondary{% else %}text-on-surface-variant hover:text-secondary{% endif %} transition-colors uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">menu_book</span>
+                        Livres
+                    </a>
+                    <a href="{% url 'reservations:member_list' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'member_list' %}text-secondary{% else %}text-on-surface-variant hover:text-secondary{% endif %} transition-colors uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">group</span>
+                        Membres
+                    </a>
+                {% else %}
+                    <!-- Student Navigation -->
+                    <a href="/" class="text-label-md font-bold {% if request.resolver_match.url_name == 'book_list' %}text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} transition-colors uppercase tracking-widest">Accueil</a>
+                    <a href="{% url 'books:catalog' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'catalog' %}text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} transition-colors uppercase tracking-widest">Catalogue</a>
+                    <a href="{% url 'reservations:my_reservations' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'my_reservations' %}text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} transition-colors uppercase tracking-widest">Réservations</a>
+                {% endif %}
+            </nav>
+
+            <div class="flex items-center gap-4">
+                {% if user.is_authenticated %}
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full relative block active:scale-90">
+                            <span class="material-symbols-outlined">notifications</span>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="absolute top-1 right-1 flex h-3 w-3">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-error text-[7px] text-white items-center justify-center font-black">{{ unread_notifications_count }}</span>
+                                </span>
+                            {% endif %}
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open" 
+                             @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-[2rem] shadow-2xl border border-outline-variant/20 z-[100] overflow-hidden"
+                             x-cloak>
+                            <div class="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low/50">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-primary">Notifications</h4>
+                                {% if unread_notifications_count > 0 %}
+                                    <span class="px-2 py-0.5 rounded-md bg-error/10 text-error text-[8px] font-bold">{{ unread_notifications_count }} Nouvelles</span>
+                                {% endif %}
+                            </div>
+                            <div class="max-h-96 overflow-y-auto hide-scrollbar">
+                                {% for notification in recent_notifications %}
+                                    <a href="{% url 'mark_notification_as_read' notification.id %}?next=notifications_list" class="block p-4 hover:bg-surface-container-low transition-colors border-b border-outline-variant/5 last:border-0 {% if not notification.is_read %}bg-primary/5{% endif %}">
+                                        <div class="flex gap-3">
+                                            <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 
+                                                {% if notification.notification_type == 'reservation_new' %}bg-primary/10 text-primary
+                                                {% elif notification.notification_type == 'reservation_approved' %}bg-success/10 text-success
+                                                {% elif notification.notification_type == 'reservation_rejected' %}bg-error/10 text-error
+                                                {% else %}bg-secondary/10 text-secondary{% endif %}">
+                                                <span class="material-symbols-outlined text-sm">
+                                                    {% if notification.notification_type == 'reservation_new' %}pending_actions
+                                                    {% elif notification.notification_type == 'reservation_approved' %}check_circle
+                                                    {% else %}info{% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow">
+                                                <p class="text-[11px] font-bold text-on-surface line-clamp-1">{{ notification.title }}</p>
+                                                <p class="text-[10px] text-outline line-clamp-2 mt-0.5">{{ notification.message }}</p>
+                                                <p class="text-[8px] text-outline/50 mt-1 font-bold uppercase">{{ notification.created_at|timesince }}</p>
+                                            </div>
+                                            {% if not notification.is_read %}
+                                                <div class="w-1.5 h-1.5 rounded-full bg-primary mt-1"></div>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                {% empty %}
+                                    <div class="p-10 text-center">
+                                        <span class="material-symbols-outlined text-outline/20 text-4xl">notifications_off</span>
+                                        <p class="text-[10px] text-outline font-bold mt-2 uppercase tracking-widest">Aucune notification</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <a href="{% url 'notifications_list' %}" @click="open = false" class="block py-3 text-center bg-surface-container-low text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all">
+                                Voir toutes les notifications
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="hidden md:flex flex-col items-end leading-tight">
+                        <span class="text-label-md font-bold text-on-surface">{{ user.username }}</span>
+                        <span class="text-[10px] text-primary uppercase tracking-widest font-bold">{{ user.get_role_display }}</span>
+                    </div>
+                    <a href="{% url 'profile' %}" class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden hover:ring-4 hover:ring-primary/10 transition-all duration-300 block shadow-sm">
+                        {% if user.profile_picture %}
+                            <img alt="Profile" class="w-full h-full object-cover" src="{{ user.profile_picture.url }}"/>
+                        {% else %}
+                            <div class="w-full h-full bg-primary-container flex items-center justify-center text-on-primary-container">
+                                <span class="material-symbols-outlined">person</span>
+                            </div>
+                        {% endif %}
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="hidden md:block text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors">Connexion</a>
+                    <a href="{% url 'register' %}" class="bg-primary text-white px-6 py-2.5 rounded-full text-label-md font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all">S'inscrire</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="min-h-screen">
+        <!-- Thin top decoration -->
+        <div class="h-1 w-full african-pattern-overlay bg-primary/5"></div>
+        
+        {% if messages %}
+            <div class="max-w-screen-xl mx-auto px-margin-mobile mt-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-2xl flex items-center gap-3 card-shadow {% if message.tags == 'success' %}bg-secondary-container/30 text-on-secondary-container border border-secondary/20{% else %}bg-error-container/30 text-on-error-container border border-error/20{% endif %} animate-in fade-in slide-in-from-top-4 duration-500">
+                        <span class="material-symbols-outlined">{% if message.tags == 'success' %}check_circle{% else %}error{% endif %}</span>
+                        <span class="font-bold text-label-md">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Content Area -->
+        <div class="max-w-screen-xl mx-auto pb-40">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-surface-variant/20 border-t border-outline-variant/30 pt-16 pb-32 md:pb-16">
+        <div class="max-w-screen-xl mx-auto px-margin-mobile">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-1 md:col-span-1">
+                    <div class="flex items-center gap-2 mb-6">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+                            <span class="material-symbols-outlined text-sm">auto_stories</span>
+                        </div>
+                        <h2 class="text-headline-md font-bold text-on-background">Estim Library</h2>
+                    </div>
+                    <p class="text-body-md text-outline mb-6 leading-relaxed">
+                        Préserver l'héritage, inspirer le futur. Votre bibliothèque numérique dédiée au savoir et à la culture.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-on-background mb-6 uppercase tracking-widest text-[11px]">Navigation</h3>
+                    <ul class="space-y-4 text-outline text-body-md">
+                        <li><a href="/" class="hover:text-primary transition-colors">Accueil</a></li>
+                        <li><a href="{% url 'books:catalog' %}" class="hover:text-primary transition-colors">Catalogue</a></li>
+                        {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+                            <li><a href="{% url 'reservations:librarian_dashboard' %}" class="text-primary font-bold hover:underline italic">Gestion (Staff)</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-on-background mb-6 uppercase tracking-widest text-[11px]">Support</h3>
+                    <ul class="space-y-4 text-outline text-body-md">
+                        <li><a href="#" class="hover:text-primary transition-colors">Aide & FAQ</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-on-background mb-6 uppercase tracking-widest text-[11px]">Contact</h3>
+                    <ul class="space-y-4 text-outline text-body-md">
+                        <li class="flex items-start gap-3">
+                            <span class="material-symbols-outlined text-primary text-sm">location_on</span>
+                            <span class="text-label-md">Dakar, Sénégal</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary text-sm">mail</span>
+                            <span class="text-label-md">contact@estimlib.org</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-outline-variant/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-[12px] font-bold text-outline uppercase tracking-wider">© 2026 Estim Library</p>
+                <div class="flex items-center gap-2 bg-white px-4 py-1.5 rounded-full border border-outline-variant/30 card-shadow">
+                    <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                    <span class="text-[10px] text-outline font-extrabold uppercase tracking-tighter">Système Opérationnel</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- BottomNavBar -->
+    <nav class="fixed bottom-0 w-full z-[70] px-4 pb-8 pt-2 md:hidden">
+        <div class="glass-effect rounded-3xl border border-outline-variant/30 shadow-2xl flex justify-around items-center p-2 max-w-md mx-auto">
+            {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+                <!-- Staff Mobile Navigation -->
+                <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'librarian_dashboard' %}text-secondary bg-secondary/10 rounded-2xl{% else %}text-outline hover:text-secondary{% endif %}" href="{% url 'reservations:librarian_dashboard' %}">
+                    <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'librarian_dashboard' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>dashboard</span>
+                    <span class="text-[10px] font-bold mt-1 uppercase">Stats</span>
+                </a>
+                <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'manage_books' %}text-secondary bg-secondary/10 rounded-2xl{% else %}text-outline hover:text-secondary{% endif %}" href="{% url 'books:manage_books' %}">
+                    <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'manage_books' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>menu_book</span>
+                    <span class="text-[10px] font-bold mt-1 uppercase">Livres</span>
+                </a>
+                <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'member_list' %}text-secondary bg-secondary/10 rounded-2xl{% else %}text-outline hover:text-secondary{% endif %}" href="{% url 'reservations:member_list' %}">
+                    <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'member_list' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>group</span>
+                    <span class="text-[10px] font-bold mt-1 uppercase">Membres</span>
+                </a>
+            {% else %}
+                <!-- Student Mobile Navigation -->
+                <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'book_list' %}text-primary bg-primary/10 rounded-2xl{% else %}text-outline hover:text-primary{% endif %}" href="{% url 'books:book_list' %}">
+                    <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'book_list' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>home</span>
+                    <span class="text-[10px] font-bold mt-1 uppercase">Home</span>
+                </a>
+                <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'catalog' %}text-primary bg-primary/10 rounded-2xl{% else %}text-outline hover:text-primary{% endif %}" href="{% url 'books:catalog' %}">
+                    <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'catalog' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>library_books</span>
+                    <span class="text-[10px] font-bold mt-1 uppercase">Catalog</span>
+                </a>
+                <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'my_reservations' %}text-primary bg-primary/10 rounded-2xl{% else %}text-outline hover:text-primary{% endif %}" href="{% url 'reservations:my_reservations' %}">
+                    <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'my_reservations' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>bookmark</span>
+                    <span class="text-[10px] font-bold mt-1 uppercase">Reserved</span>
+                </a>
+            {% endif %}
+            <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'profile' %}text-primary bg-primary/10 rounded-2xl{% else %}text-outline hover:text-primary{% endif %}" href="{% url 'profile' %}">
+                <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'profile' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>person</span>
+                <span class="text-[10px] font-bold mt-1 uppercase">Member</span>
+            </a>
+        </div>
+    </nav>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

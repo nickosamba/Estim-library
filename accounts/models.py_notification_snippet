@@ -1,0 +1,26 @@
+from django.db import models
+from django.conf import settings
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('reservation_new', 'Nouvelle Réservation'),
+        ('reservation_approved', 'Réservation Approuvée'),
+        ('reservation_rejected', 'Réservation Refusée'),
+        ('book_borrowed', 'Livre Emprunté'),
+        ('book_returned', 'Livre Rendu'),
+    )
+
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    related_id = models.PositiveIntegerField(null=True, blank=True) # ID de la réservation par exemple
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} pour {self.recipient.username}"

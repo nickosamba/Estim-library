@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Catalogue - Estim Library{% endblock %}
+
+{% block extra_css %}
+<style>
+    .african-pattern {
+        background-image: radial-gradient(circle at 2px 2px, rgba(117, 91, 0, 0.05) 1px, transparent 0);
+        background-size: 24px 24px;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-8 px-margin-mobile max-w-4xl mx-auto african-pattern">
+    <!-- Search Bar -->
+    <div class="mb-8 relative">
+        <div class="flex items-center bg-white rounded-full border border-outline/30 px-6 py-4 shadow-sm focus-within:ring-2 focus-within:ring-primary-container focus-within:border-primary transition-all">
+            <span class="material-symbols-outlined text-outline mr-3">search</span>
+            <input 
+                name="q" 
+                value="{{ search_query|default:'' }}" 
+                class="bg-transparent border-none focus:ring-0 w-full text-body-md font-body-md placeholder:text-outline-variant" 
+                placeholder="Rechercher un livre, un auteur..." 
+                type="text"
+                hx-get="{% url 'books:catalog' %}"
+                hx-trigger="keyup changed delay:500ms"
+                hx-target="#book-list-container"
+                hx-push-url="true"
+                hx-include="[name='category']"
+            />
+            <button class="material-symbols-outlined text-primary ml-2 hover:scale-110 transition-transform">filter_list</button>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="flex gap-3 overflow-x-auto pb-4 mb-8 no-scrollbar scroll-smooth">
+        <input type="hidden" name="category" value="{{ selected_category|default:'' }}">
+        <a href="{% url 'books:catalog' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+           class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if not selected_category %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">
+            Tout
+        </a>
+        {% for category in categories %}
+            <a href="{% url 'books:catalog' %}?category={{ category.id }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+               class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if selected_category == category.id|stringformat:'i' %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">
+                {{ category.name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Results Container -->
+    <div id="book-list-container">
+        {% include 'books/partials/book_list_partial.html' %}
+    </div>
+</div>
+{% endblock %}

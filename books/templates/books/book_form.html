@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Estim Library{% endblock %}
+
+{% block content %}
+<div class="px-margin-mobile pt-8 pb-40">
+    <div class="max-w-3xl mx-auto">
+        <!-- Header -->
+        <div class="mb-12">
+            <div class="flex items-center gap-3 mb-4">
+                <a href="{% url 'books:manage_books' %}" class="w-10 h-10 rounded-xl bg-surface-container hover:bg-outline-variant/20 flex items-center justify-center text-outline transition-all">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <h2 class="text-[32px] font-extrabold text-on-background tracking-tighter">{{ title }}</h2>
+            </div>
+            <p class="text-body-md text-outline font-medium ml-13">Remplissez les informations ci-dessous pour mettre à jour le catalogue.</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white rounded-[3rem] p-10 md:p-12 border border-outline-variant/20 shadow-2xl">
+            <form method="POST" enctype="multipart/form-data" class="space-y-8">
+                {% csrf_token %}
+                
+                <!-- Main Info Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-1 md:col-span-2 space-y-2">
+                        <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Titre de l'ouvrage</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<p class="text-error text-[10px] font-bold mt-1 ml-1">{{ form.title.errors.0 }}</p>{% endif %}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Auteur</label>
+                        {{ form.author }}
+                        {% if form.author.errors %}<p class="text-error text-[10px] font-bold mt-1 ml-1">{{ form.author.errors.0 }}</p>{% endif %}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Catégorie</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}<p class="text-error text-[10px] font-bold mt-1 ml-1">{{ form.category.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Description / Résumé</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<p class="text-error text-[10px] font-bold mt-1 ml-1">{{ form.description.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">ISBN</label>
+                        <div class="flex gap-2">
+                            {{ form.isbn }}
+                            <button type="button" id="fetch-isbn-btn" class="bg-primary/10 text-primary px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all whitespace-nowrap">
+                                <span class="hidden sm:inline">Récupérer</span>
+                                <span class="material-symbols-outlined text-sm sm:hidden">search</span>
+                            </button>
+                        </div>
+                        <p id="isbn-status" class="text-[10px] font-bold hidden ml-1"></p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Année</label>
+                        {{ form.publication_year }}
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Stock</label>
+                        {{ form.copies_available }}
+                    </div>
+                </div>
+
+                <!-- Files Section -->
+                <div class="p-8 rounded-[2.5rem] bg-surface-container-low/30 border border-outline-variant/10 space-y-6">
+                    <h3 class="text-label-sm font-extrabold text-secondary uppercase tracking-widest mb-4">Fichiers & Médias</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block">Image de couverture</label>
+                            <div class="relative group">
+                                {{ form.cover_image }}
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block">Fichier PDF (Liseuse)</label>
+                            <div class="relative group">
+                                {{ form.pdf_file }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 p-4 bg-secondary/5 rounded-2xl border border-secondary/10">
+                    {{ form.is_available }}
+                    <label for="{{ form.is_available.id_for_label }}" class="text-label-md font-bold text-secondary uppercase tracking-widest cursor-pointer">Rendre l'ouvrage immédiatement disponible au public</label>
+                </div>
+
+                <div class="pt-6">
+                    <button type="submit" class="w-full bg-secondary text-white py-5 rounded-2xl font-bold shadow-xl shadow-secondary/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <span class="material-symbols-outlined">save</span>
+                        {% if book %}Enregistrer les modifications{% else %}Ajouter l'ouvrage au catalogue{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('fetch-isbn-btn').addEventListener('click', async function() {
+        const isbnInput = document.querySelector('input[name="isbn"]');
+        const isbn = isbnInput.value;
+        const status = document.getElementById('isbn-status');
+        const btn = this;
+        
+        if (!isbn) {
+            status.textContent = "Veuillez entrer un ISBN d'abord.";
+            status.className = "text-[10px] font-bold text-error ml-1 block";
+            status.classList.remove('hidden');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">sync</span>';
+        status.textContent = "Recherche en cours...";
+        status.className = "text-[10px] font-bold text-primary ml-1 block";
+        status.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`{% url 'books:fetch_book_info' %}?isbn=${isbn}`);
+            const data = await response.json();
+
+            if (data.success) {
+                document.querySelector('input[name="title"]').value = data.title;
+                document.querySelector('textarea[name="description"]').value = data.description;
+                document.querySelector('input[name="publication_year"]').value = data.publication_year;
+                
+                // Handle Author (Dynamic addition to select)
+                const authorSelect = document.querySelector('select[name="author"]');
+                let authorOption = Array.from(authorSelect.options).find(opt => opt.value == data.author_id);
+                
+                if (!authorOption) {
+                    authorOption = new Option(data.author_name, data.author_id);
+                    authorSelect.add(authorOption);
+                }
+                authorSelect.value = data.author_id;
+
+                // Handle Category
+                const categorySelect = document.querySelector('select[name="category"]');
+                const existingHint = document.getElementById('category-hint-wrapper');
+                if (existingHint) existingHint.remove();
+
+                if (data.category_id) {
+                    categorySelect.value = data.category_id;
+                } else if (data.suggested_category) {
+                    const hintWrapper = document.createElement('div');
+                    hintWrapper.id = 'category-hint-wrapper';
+                    hintWrapper.className = "flex items-center gap-2 mt-2 p-2 bg-primary/5 rounded-xl border border-primary/10";
+                    
+                    hintWrapper.innerHTML = `
+                        <span class="text-[9px] font-black text-primary uppercase tracking-widest flex-grow">Suggestion : ${data.suggested_category}</span>
+                        <button type="button" id="create-cat-btn" class="bg-primary text-white w-6 h-6 rounded-lg flex items-center justify-center hover:scale-110 transition-all shadow-sm" title="Créer cette catégorie">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                        </button>
+                    `;
+                    categorySelect.parentNode.appendChild(hintWrapper);
+
+                    // Add listener to the new button
+                    document.getElementById('create-cat-btn').addEventListener('click', async function() {
+                        const formData = new FormData();
+                        formData.append('name', data.suggested_category);
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                        try {
+                            const res = await fetch("{% url 'books:create_category_api' %}", {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const catData = await res.json();
+                            if (catData.success) {
+                                const newOpt = new Option(catData.name, catData.id);
+                                categorySelect.add(newOpt);
+                                categorySelect.value = catData.id;
+                                hintWrapper.remove();
+                            }
+                        } catch (e) {
+                            console.error("Erreur création catégorie", e);
+                        }
+                    });
+                }
+                
+                status.textContent = "Données récupérées !";
+                status.className = "text-[10px] font-bold text-success ml-1 block";
+            } else {
+                status.textContent = data.error || "Livre non trouvé.";
+                status.className = "text-[10px] font-bold text-error ml-1 block";
+            }
+        } catch (error) {
+            status.textContent = "Erreur de connexion.";
+            status.className = "text-[10px] font-bold text-error ml-1 block";
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="hidden sm:inline">Récupérer</span><span class="material-symbols-outlined text-sm sm:hidden">search</span>';
+        }
+    });
+</script>
+{% endblock %}

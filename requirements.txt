@@ -1,0 +1,5 @@
+django
+pandas
+requests
+openpyxl
+python-dotenv

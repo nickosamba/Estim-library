@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon Profil - Estim Library{% endblock %}
+
+{% block content %}
+<div class="px-margin-mobile pt-8 pb-40">
+    <div class="max-w-4xl mx-auto">
+        <!-- Profile Header Card -->
+        <div class="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-outline-variant/20 mb-12 group/card">
+            <div class="h-40 bg-primary-container african-pattern-overlay opacity-30 group-hover/card:opacity-50 transition-all duration-700"></div>
+            <div class="px-10 pb-10 -mt-20">
+                <div class="flex flex-col md:flex-row items-end gap-8 mb-10">
+                    <div class="relative">
+                        <div class="w-40 h-40 rounded-[2.5rem] border-8 border-white overflow-hidden shadow-2xl bg-white group/avatar">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture.url }}" class="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-700" alt="{{ user.username }}">
+                            {% else %}
+                                <div class="w-full h-full bg-surface-container flex items-center justify-center text-outline/30">
+                                    <span class="material-symbols-outlined text-6xl">person</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button onclick="document.getElementById('profile-modal').classList.remove('hidden')" class="absolute bottom-2 right-2 w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-sm">edit_square</span>
+                        </button>
+                    </div>
+                    <div class="flex-grow pb-2">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="px-4 py-1.5 rounded-full bg-secondary text-white text-[10px] font-extrabold uppercase tracking-[0.2em] shadow-lg shadow-secondary/20">
+                                {{ user.get_role_display }}
+                            </span>
+                        </div>
+                        <h2 class="text-[40px] font-extrabold text-on-background tracking-tighter leading-tight">{{ user.username }}</h2>
+                        <p class="text-outline font-bold flex items-center gap-2 mt-2 uppercase tracking-widest text-[11px] opacity-70">
+                            <span class="material-symbols-outlined text-sm">calendar_today</span>
+                            Membre depuis {{ user.date_joined|date:"M Y" }}
+                        </p>
+                    </div>
+                    <div class="pb-2">
+                        <button onclick="document.getElementById('profile-modal').classList.remove('hidden')" class="bg-primary text-white px-8 py-3.5 rounded-2xl font-bold text-label-md shadow-xl shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                            Modifier le profil
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Profile Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 pt-10 border-t border-outline-variant/10">
+                    <div class="space-y-8">
+                        <div>
+                            <h3 class="text-label-sm font-extrabold text-primary uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                <span class="w-6 h-[1px] bg-primary/30"></span>
+                                Informations
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-5 p-5 rounded-[2rem] bg-surface-container-low/50 border border-outline-variant/10 card-shadow">
+                                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm">
+                                        <span class="material-symbols-outlined">mail</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-outline font-extrabold uppercase tracking-widest opacity-60">Adresse Email</p>
+                                        <p class="text-body-md font-extrabold text-on-background">{{ user.email|default:"Non renseigné" }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-5 p-5 rounded-[2rem] bg-surface-container-low/50 border border-outline-variant/10 card-shadow">
+                                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-secondary shadow-sm">
+                                        <span class="material-symbols-outlined">call</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-outline font-extrabold uppercase tracking-widest opacity-60">Téléphone</p>
+                                        <p class="text-body-md font-extrabold text-on-background">{{ user.phone_number|default:"Non renseigné" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-label-sm font-extrabold text-primary uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                            <span class="w-6 h-[1px] bg-primary/30"></span>
+                            Ma Biographie
+                        </h3>
+                        <div class="p-8 rounded-[2.5rem] bg-surface-container-low/30 border border-outline-variant/10 h-full relative overflow-hidden">
+                            <p class="text-body-lg text-on-surface-variant leading-relaxed italic relative z-10 font-medium">
+                                "{{ user.bio|default:"Vous n'avez pas encore rédigé de biographie. Partagez votre passion pour la lecture avec la communauté !" }}"
+                            </p>
+                            <span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl text-primary opacity-5 -rotate-12">format_quote</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+        <!-- Staff Quick Actions & Stats -->
+        <div class="mb-12">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                </div>
+                <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Espace Gestionnaire</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Management Stats -->
+                <a href="{% url 'reservations:librarian_dashboard' %}" class="bg-white p-8 rounded-[2.5rem] border border-outline-variant/20 card-shadow-hover transition-all group">
+                    <p class="text-[10px] font-extrabold text-outline uppercase tracking-widest mb-4 opacity-60">Demandes en attente</p>
+                    <div class="flex items-end justify-between">
+                        <span class="text-4xl font-extrabold text-secondary">{{ total_pending_requests }}</span>
+                        <div class="w-12 h-12 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center group-hover:bg-secondary group-hover:text-white transition-all">
+                            <span class="material-symbols-outlined">pending_actions</span>
+                        </div>
+                    </div>
+                </a>
+                
+                <a href="{% url 'reservations:member_list' %}" class="bg-white p-8 rounded-[2.5rem] border border-outline-variant/20 card-shadow-hover transition-all group">
+                    <p class="text-[10px] font-extrabold text-outline uppercase tracking-widest mb-4 opacity-60">Gestion Membres</p>
+                    <div class="flex items-end justify-between">
+                        <span class="text-4xl font-extrabold text-on-background">{{ members.count|default:"Accéder" }}</span>
+                        <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                            <span class="material-symbols-outlined">group</span>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="bg-secondary text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-extrabold uppercase tracking-widest mb-4 opacity-80">Actions Rapides</p>
+                        <div class="flex flex-col gap-3">
+                            <a href="{% url 'reservations:librarian_dashboard' %}" class="text-label-md font-bold flex items-center gap-2 hover:translate-x-1 transition-transform">
+                                <span class="material-symbols-outlined text-sm">add_box</span>
+                                Gérer les stocks
+                            </a>
+                            <a href="/admin/" target="_blank" class="text-label-md font-bold flex items-center gap-2 hover:translate-x-1 transition-transform">
+                                <span class="material-symbols-outlined text-sm">settings</span>
+                                Système Avancé
+                            </a>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-6 -right-6 w-24 h-24 african-pattern-overlay opacity-20 rotate-12 group-hover:rotate-0 transition-transform duration-700"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Activity Sections with Tabs -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10" x-data="{ tab: 'reservations' }">
+            <div class="md:col-span-2 space-y-10">
+                <!-- Tabs Header -->
+                <div class="flex gap-4 p-2 bg-surface-container-low rounded-3xl border border-outline-variant/10 max-w-fit">
+                    <button @click="tab = 'reservations'" :class="tab === 'reservations' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-outline hover:bg-surface-container-high'" class="px-6 py-2.5 rounded-2xl font-bold text-label-md transition-all">
+                        Réservations
+                    </button>
+                    <button @click="tab = 'favorites'" :class="tab === 'favorites' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-outline hover:bg-surface-container-high'" class="px-6 py-2.5 rounded-2xl font-bold text-label-md transition-all">
+                        Coups de cœur
+                    </button>
+                </div>
+
+                <!-- Reservations Tab -->
+                <div x-show="tab === 'reservations'" class="bg-white rounded-[2.5rem] p-10 border border-outline-variant/20 card-shadow animate-in fade-in duration-500">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Activités Récentes</h3>
+                        <a href="{% url 'reservations:my_reservations' %}" class="text-primary font-bold text-label-md hover:underline">Voir tout</a>
+                    </div>
+                    
+                    {% if recent_reservations %}
+                        <div class="space-y-4">
+                            {% for reservation in recent_reservations %}
+                                <div class="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-3xl bg-surface-container-low/30 border border-outline-variant/10 group/res transition-all hover:bg-white hover:shadow-md">
+                                    <div class="w-16 h-24 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                                        {% if reservation.book.cover_image %}
+                                            <img src="{{ reservation.book.cover_image.url }}" class="w-full h-full object-cover" alt="">
+                                        {% else %}
+                                            <div class="w-full h-full bg-surface-container flex items-center justify-center text-outline/20">
+                                                <span class="material-symbols-outlined text-xl">book</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow text-center sm:text-left">
+                                        <h4 class="font-bold text-on-surface text-body-lg">{{ reservation.book.title }}</h4>
+                                        <div class="flex flex-wrap justify-center sm:justify-start items-center gap-3 mt-2">
+                                            <span class="px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest 
+                                                {% if reservation.status == 'pending' %}bg-primary-fixed text-on-primary-fixed
+                                                {% elif reservation.status == 'approved' or reservation.status == 'borrowed' %}bg-success/10 text-success
+                                                {% else %}bg-surface-variant text-outline{% endif %}">
+                                                {{ reservation.get_status_display }}
+                                            </span>
+                                            <span class="text-[10px] text-outline font-bold uppercase">Le {{ reservation.reserved_at|date:"d M Y" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        {% if reservation.status == 'pending' or reservation.status == 'approved' %}
+                                            <a href="{% url 'reservations:cancel_reservation' reservation.id %}" class="p-3 text-error hover:bg-error/5 rounded-2xl transition-all" title="Annuler">
+                                                <span class="material-symbols-outlined">cancel</span>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'books:book_detail' reservation.book.slug %}" class="p-3 text-primary hover:bg-primary/5 rounded-2xl transition-all">
+                                            <span class="material-symbols-outlined">arrow_forward</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-outline-variant/20 rounded-[2.5rem] bg-surface-container-low/20">
+                            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center text-outline/20 mb-6 shadow-sm border border-outline-variant/10">
+                                <span class="material-symbols-outlined text-4xl">bookmark_add</span>
+                            </div>
+                            <p class="text-headline-md font-extrabold text-outline">Aucune réservation</p>
+                            <p class="text-label-md text-outline/60 mt-2 mb-8 max-w-xs mx-auto">Parcourez le catalogue pour découvrir et réserver votre prochain livre.</p>
+                            <a href="{% url 'books:catalog' %}" class="bg-primary text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">Explorer le Catalogue</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Favorites Tab -->
+                <div x-show="tab === 'favorites'" class="bg-white rounded-[2.5rem] p-10 border border-outline-variant/20 card-shadow animate-in fade-in duration-500">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Coups de cœur récents</h3>
+                        <div class="px-4 py-1.5 rounded-full bg-error/10 text-error text-[10px] font-extrabold uppercase tracking-widest">
+                            {{ user.favorites.count }} Total
+                        </div>
+                    </div>
+                    
+                    {% if recent_favorites %}
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                            {% for favorite in recent_favorites %}
+                                <div class="group/fav">
+                                    {% include 'books/components/book_card.html' with book=favorite.book %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-outline-variant/20 rounded-[2.5rem] bg-surface-container-low/20">
+                            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center text-error/20 mb-6 shadow-sm border border-outline-variant/10">
+                                <span class="material-symbols-outlined text-4xl">favorite</span>
+                            </div>
+                            <p class="text-headline-md font-extrabold text-outline">Liste vide</p>
+                            <p class="text-label-md text-outline/60 mt-2 mb-8 max-w-xs mx-auto">Ajoutez des livres à vos favoris pour les retrouver facilement plus tard.</p>
+                            <a href="{% url 'books:catalog' %}" class="bg-primary text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">Découvrir des livres</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="space-y-10">
+                <!-- Account Stats -->
+                <div class="bg-secondary text-white rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <h3 class="text-headline-md font-extrabold mb-10 tracking-tight">Statistiques</h3>
+                        <div class="space-y-8">
+                            <div class="flex justify-between items-center">
+                                <span class="text-label-md font-bold opacity-80 uppercase tracking-widest">Livres réservés</span>
+                                <span class="text-headline-lg font-extrabold">{{ user.reservations.count }}</span>
+                            </div>
+                            <div class="h-[1px] bg-white/10"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-label-md font-bold opacity-80 uppercase tracking-widest">Emprunts finis</span>
+                                <span class="text-headline-lg font-extrabold">{{ user.reservations.filter.status|default:"0" }}</span>
+                            </div>
+                            <div class="h-[1px] bg-white/10"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-label-md font-bold opacity-80 uppercase tracking-widest">Score Culturel</span>
+                                <span class="text-headline-lg font-extrabold text-primary-fixed">150</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-10 -right-10 w-48 h-48 african-pattern-overlay opacity-20 rotate-12 group-hover:rotate-0 transition-transform duration-1000"></div>
+                </div>
+                
+                <!-- Security Card -->
+                <div class="bg-white rounded-[2.5rem] p-8 border border-outline-variant/20 card-shadow">
+                    <h3 class="text-[10px] font-extrabold text-outline mb-6 uppercase tracking-[0.2em] opacity-60">Sécurité du compte</h3>
+                    <a href="{% url 'password_reset' %}" class="w-full flex items-center justify-between p-5 rounded-2xl hover:bg-surface-container-low transition-all group mb-2 border border-transparent hover:border-outline-variant/20">
+                        <span class="text-label-md font-extrabold text-outline group-hover:text-on-surface">Changer de mot de passe</span>
+                        <span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+                    </a>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full flex items-center justify-between p-5 rounded-2xl hover:bg-error/5 transition-all group border border-transparent hover:border-error/10">
+                            <span class="text-label-md font-extrabold text-error">Déconnexion</span>
+                            <span class="material-symbols-outlined text-error group-hover:translate-x-1 transition-transform">logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="profile-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-on-background/60 backdrop-blur-sm" onclick="this.parentElement.classList.add('hidden')"></div>
+    <div class="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+        <div class="p-8 border-b border-outline-variant/20 flex items-center justify-between bg-surface-container-low">
+            <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Modifier mon profil</h3>
+            <button onclick="document.getElementById('profile-modal').classList.add('hidden')" class="p-2 hover:bg-surface-variant/30 rounded-full transition-all">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form method="POST" enctype="multipart/form-data" class="p-8 space-y-6 max-h-[70vh] overflow-y-auto hide-scrollbar">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="space-y-2">
+                    <label for="{{ field.id_for_label }}" class="block text-label-md font-extrabold text-primary uppercase tracking-widest text-[11px] ml-1">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="text-error text-[10px] font-bold mt-1 ml-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

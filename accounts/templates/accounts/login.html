@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Connexion - Estim Library{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex flex-col justify-center py-12 px-margin-mobile sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full max-w-md">
+        <h2 class="mt-6 text-center text-headline-lg font-headline-lg text-primary">Connexion à votre compte</h2>
+        <div class="h-1 w-12 bg-secondary rounded-full mx-auto mt-2"></div>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full max-w-md">
+        <div class="bg-white py-8 px-4 shadow-lg rounded-2xl sm:px-10 border border-outline-variant/30">
+            {% if form.errors %}
+                <div class="mb-6 p-4 rounded-xl bg-error-container text-on-error-container text-label-md border border-error/20 animate-in fade-in slide-in-from-top-2">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="material-symbols-outlined text-sm">error</span>
+                        <span class="font-bold">Erreur de connexion</span>
+                    </div>
+                    <p>Identifiants invalides. Veuillez réessayer.</p>
+                </div>
+            {% endif %}
+            <form class="space-y-6" method="POST">
+                {% csrf_token %}
+                <div>
+                    <label for="username" class="block text-label-md font-label-md text-on-surface-variant">Nom d'utilisateur</label>
+                    <div class="mt-1">
+                        <input id="username" name="username" type="text" required class="block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-label-md font-label-md text-on-surface-variant flex justify-between items-center">
+                        Mot de passe
+                        <a href="{% url 'password_reset' %}" class="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">Oublié ?</a>
+                    </label>
+                    <div class="mt-1">
+                        <input id="password" name="password" type="password" required class="block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-headline-md font-bold text-on-primary-fixed bg-primary-container hover:brightness-110 active:scale-95 transition-all">
+                        Se connecter
+                    </button>
+                </div>
+            </form>
+            <div class="mt-6 text-center">
+                <p class="text-body-md text-outline">Pas encore de compte ? <a href="{% url 'register' %}" class="font-bold text-secondary hover:underline">S'inscrire</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

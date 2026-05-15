@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion Bibliothèque - Dashboard Staff{% endblock %}
+
+{% block content %}
+<div class="px-margin-mobile pt-8 pb-40">
+    <div class="max-w-6xl mx-auto">
+        <!-- Dashboard Header -->
+        <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-[2px] bg-primary rounded-full"></div>
+                    <span class="text-primary font-bold text-[10px] uppercase tracking-[0.2em]">Espace Administrateur</span>
+                </div>
+                <h2 class="text-[40px] font-extrabold text-on-background tracking-tighter leading-tight">Tableau de Bord <span class="text-primary">Staff</span></h2>
+            </div>
+            <div class="flex gap-4">
+                <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-outline-variant/20 flex items-center gap-3">
+                    <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                    <span class="text-label-md font-bold text-on-surface-variant uppercase tracking-widest text-[10px]">Session Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-outline-variant/20">
+                <p class="text-[10px] font-extrabold text-outline uppercase tracking-widest mb-2 opacity-60">Total Livres</p>
+                <div class="flex items-end gap-2">
+                    <span class="text-[32px] font-extrabold text-on-background leading-none">{{ total_books }}</span>
+                    <span class="text-primary material-symbols-outlined mb-1">inventory_2</span>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-outline-variant/20">
+                <p class="text-[10px] font-extrabold text-primary uppercase tracking-widest mb-2 opacity-60">En attente</p>
+                <div class="flex items-end gap-2">
+                    <span class="text-[32px] font-extrabold text-primary leading-none">{{ pending_count }}</span>
+                    <span class="text-primary material-symbols-outlined mb-1">hourglass_empty</span>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-outline-variant/20">
+                <p class="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 opacity-60">En circulation</p>
+                <div class="flex items-end gap-2">
+                    <span class="text-[32px] font-extrabold text-secondary leading-none">{{ borrowed_count }}</span>
+                    <span class="text-secondary material-symbols-outlined mb-1">auto_stories</span>
+                </div>
+            </div>
+            <div class="{% if late_count > 0 %}bg-error text-white{% else %}bg-success text-white{% endif %} p-8 rounded-[2.5rem] shadow-xl overflow-hidden relative group">
+                <div class="relative z-10">
+                    <p class="text-[10px] font-extrabold uppercase tracking-widest mb-2 opacity-80">Retards</p>
+                    <span class="text-[32px] font-extrabold leading-none">{{ late_count }}</span>
+                </div>
+                <div class="absolute -bottom-6 -right-6 w-24 h-24 african-pattern-overlay opacity-20 rotate-12 group-hover:rotate-0 transition-transform duration-700"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <!-- Management Table -->
+            <div class="lg:col-span-2 bg-white rounded-[3rem] border border-outline-variant/20 card-shadow overflow-hidden">
+                <div class="p-10 border-b border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Gestion des Réservations</h3>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-surface-container-low/50">
+                                <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Utilisateur</th>
+                                <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Ouvrage</th>
+                                <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Statut</th>
+                                <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant/10">
+                            {% for res in reservations %}
+                                <tr class="hover:bg-surface-container-low/20 transition-colors group">
+                                    <td class="px-10 py-6">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
+                                                {{ res.user.username|slice:":2"|upper }}
+                                            </div>
+                                            <span class="font-bold text-on-surface">{{ res.user.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-10 py-6">
+                                        <div class="flex flex-col">
+                                            <span class="font-medium text-on-surface-variant line-clamp-1">{{ res.book.title }}</span>
+                                            {% if res.status == 'borrowed' %}
+                                                <span class="text-[10px] {% if res.end_date < today %}text-error font-bold{% else %}text-outline{% endif %}">
+                                                    Retour prévu : {{ res.end_date|date:"d/m/Y" }}
+                                                    {% if res.end_date < today %}(RETARD){% endif %}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-10 py-6">
+                                        <span class="px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest
+                                            {% if res.status == 'pending' %}bg-primary-fixed text-on-primary-fixed
+                                            {% elif res.status == 'approved' %}bg-success/10 text-success
+                                            {% elif res.status == 'borrowed' %}
+                                                {% if res.end_date < today %}bg-error/10 text-error animate-pulse{% else %}bg-secondary-container text-on-secondary-container{% endif %}
+                                            {% elif res.status == 'returned' %}bg-surface-variant text-outline
+                                            {% else %}bg-error/10 text-error{% endif %}">
+                                            {{ res.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td class="px-10 py-6 text-right">
+                                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {% if res.status == 'pending' %}
+                                                <a href="{% url 'reservations:update_reservation_status' res.id 'approved' %}" class="w-8 h-8 rounded-lg bg-success text-white flex items-center justify-center hover:scale-110 transition-all shadow-sm">
+                                                    <span class="material-symbols-outlined text-sm">check</span>
+                                                </a>
+                                                <a href="{% url 'reservations:update_reservation_status' res.id 'rejected' %}" class="w-8 h-8 rounded-lg bg-error text-white flex items-center justify-center hover:scale-110 transition-all shadow-sm">
+                                                    <span class="material-symbols-outlined text-sm">close</span>
+                                                </a>
+                                            {% elif res.status == 'approved' %}
+                                                <a href="{% url 'reservations:update_reservation_status' res.id 'borrowed' %}" class="px-4 py-1.5 rounded-lg bg-secondary text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-sm">
+                                                    Remettre
+                                                </a>
+                                            {% elif res.status == 'borrowed' %}
+                                                <a href="{% url 'reservations:update_reservation_status' res.id 'returned' %}" class="px-4 py-1.5 rounded-lg bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-sm">
+                                                    Retour
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-10 py-20 text-center text-outline italic">Aucune réservation à traiter.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Side Stats -->
+            <div class="space-y-6">
+                <!-- Popular Books -->
+                <div class="bg-white rounded-[2.5rem] border border-outline-variant/20 card-shadow p-8">
+                    <h4 class="text-label-lg font-extrabold text-on-background mb-6 uppercase tracking-wider text-[11px]">Livres les plus demandés</h4>
+                    <div class="space-y-6">
+                        {% for book in popular_books %}
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-14 rounded-lg bg-surface-container overflow-hidden flex-shrink-0">
+                                    {% if book.cover_image %}
+                                        <img src="{{ book.cover_image.url }}" class="w-full h-full object-cover">
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-[12px] font-bold text-on-surface line-clamp-1 leading-tight">{{ book.title }}</p>
+                                    <p class="text-[10px] text-outline">{{ book.res_count }} réservations</p>
+                                </div>
+                                <div class="w-6 h-6 rounded-full bg-primary/5 flex items-center justify-center text-[10px] font-black text-primary">
+                                    {{ forloop.counter }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Fast Actions -->
+                <div class="bg-surface-container-low rounded-[2.5rem] p-8 border border-outline-variant/10">
+                    <h4 class="text-label-lg font-extrabold text-on-background mb-4 uppercase tracking-wider text-[11px]">Raccourcis</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <a href="{% url 'books:manage_books' %}" class="p-4 bg-white rounded-2xl border border-outline-variant/10 hover:border-primary/30 transition-all group">
+                            <span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform">library_add</span>
+                            <p class="text-[10px] font-bold text-on-surface-variant">Ajouter Livre</p>
+                        </a>
+                        <a href="{% url 'reservations:member_list' %}" class="p-4 bg-white rounded-2xl border border-outline-variant/10 hover:border-secondary/30 transition-all group">
+                            <span class="material-symbols-outlined text-secondary mb-2 group-hover:scale-110 transition-transform">group</span>
+                            <p class="text-[10px] font-bold text-on-surface-variant">Membres</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

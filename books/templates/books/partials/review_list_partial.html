@@ -1,0 +1,46 @@
+{% if error %}
+<div class="bg-error-container/20 text-error p-4 rounded-xl border border-error/20 mb-4 animate-shake">
+    <p class="text-label-md font-bold flex items-center gap-2">
+        <span class="material-symbols-outlined">error</span>
+        {{ error }}
+    </p>
+</div>
+{% endif %}
+
+{% if request.headers.HX_Trigger == 'reviewAdded' %}
+<div class="bg-secondary-container/20 text-secondary p-4 rounded-xl border border-secondary/20 mb-4 animate-in fade-in">
+    <p class="text-label-md font-bold flex items-center gap-2">
+        <span class="material-symbols-outlined">check_circle</span>
+        Votre avis a été publié avec succès !
+    </p>
+</div>
+{% endif %}
+
+{% for review in reviews %}
+<div class="bg-white p-6 rounded-2xl border border-outline-variant/10 shadow-sm flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                {{ review.user.username|first|upper }}
+            </div>
+            <div>
+                <p class="font-bold text-on-surface">{{ review.user.get_full_name|default:review.user.username }}</p>
+                <p class="text-label-small text-outline">{{ review.created_at|date:"d F Y" }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1 text-secondary">
+            {% for i in "12345" %}
+                <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' {% if i|add:0 <= review.rating %}1{% else %}0{% endif %};">
+                    star
+                </span>
+            {% endfor %}
+        </div>
+    </div>
+    <p class="text-body-md text-on-surface-variant italic">"{{ review.comment }}"</p>
+</div>
+{% empty %}
+<div class="text-center py-12 bg-surface-container-low rounded-3xl border border-dashed border-outline-variant/50">
+    <span class="material-symbols-outlined text-outline/30 text-5xl mb-4">rate_review</span>
+    <p class="text-on-surface-variant font-medium">Aucun avis pour le moment. Soyez le premier à en laisser un !</p>
+</div>
+{% endfor %}
