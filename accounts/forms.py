@@ -5,7 +5,7 @@ from .models import User
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = UserCreationForm.Meta.fields + ('email', 'role', 'phone_number')
+        fields = UserCreationForm.Meta.fields + ('email', 'role', 'campus', 'department', 'filiere', 'level', 'phone_number')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -18,7 +18,7 @@ class CustomUserCreationForm(UserCreationForm):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ('email', 'phone_number', 'bio', 'profile_picture')
+        fields = ('email', 'phone_number', 'campus', 'department', 'filiere', 'level', 'bio', 'profile_picture')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -18,10 +18,38 @@ class Author(models.Model):
         return self.name
 
 class Book(models.Model):
+    CAMPUS_CHOICES = (
+        ('brazzaville', 'Brazzaville'),
+        ('pointe_noire', 'Pointe-Noire'),
+        ('ouesso', 'Ouesso'),
+    )
+
+    DEPARTMENT_CHOICES = (
+        ('sciences', 'Sciences et Technologies'),
+        ('management', 'Management et Gestion'),
+        ('lettres', 'Lettres et Sciences Humaines'),
+    )
+
+    LEVEL_CHOICES = (
+        ('L1', 'Licence 1'),
+        ('L2', 'Licence 2'),
+        ('L3', 'Licence 3'),
+        ('M1', 'Master 1'),
+        ('M2', 'Master 2'),
+        ('DOC', 'Doctorat'),
+    )
+
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name='books')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='books')
+    
+    # Academic targets
+    target_campus = models.CharField(max_length=50, choices=CAMPUS_CHOICES, blank=True, null=True)
+    target_department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES, blank=True, null=True)
+    target_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, blank=True, null=True)
+    target_filiere = models.CharField(max_length=100, blank=True, null=True, help_text="Option spécifique (ex: Informatique)")
+    
     description = models.TextField()
     cover_image = models.ImageField(upload_to='books/covers/')
     pdf_file = models.FileField(upload_to='books/pdfs/', blank=True, null=True)

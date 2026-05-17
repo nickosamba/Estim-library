@@ -55,6 +55,20 @@
                             <div class="space-y-4">
                                 <div class="flex items-center gap-5 p-5 rounded-[2rem] bg-surface-container-low/50 border border-outline-variant/10 card-shadow">
                                     <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm">
+                                        <span class="material-symbols-outlined">school</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-outline font-extrabold uppercase tracking-widest opacity-60">Cursus</p>
+                                        <p class="text-body-md font-extrabold text-on-background">
+                                            {{ user.get_level_display|default:"-" }} {{ user.filiere|default:"" }}
+                                        </p>
+                                        <p class="text-[9px] text-primary font-bold uppercase tracking-tighter">
+                                            {{ user.get_department_display|default:"Département non défini" }} • {{ user.get_campus_display|default:"Campus inconnu" }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-5 p-5 rounded-[2rem] bg-surface-container-low/50 border border-outline-variant/10 card-shadow">
+                                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm">
                                         <span class="material-symbols-outlined">mail</span>
                                     </div>
                                     <div>

@@ -113,6 +113,33 @@ def librarian_dashboard(request):
         res_count=Count('reservations')
     ).order_by('-res_count')[:5]
 
+    # Academic Analytics (New Phase 3)
+    from accounts.models import User
+    from django.db.models import Count
+
+    # Count reservations per department
+    dept_stats = reservations.values('user__department').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    # Translate dept codes for the chart/display
+    dept_labels = dict(User.DEPARTMENT_CHOICES)
+    formatted_dept_stats = [
+        {'label': dept_labels.get(item['user__department'], 'Non défini'), 'value': item['count']}
+        for item in dept_stats if item['user__department']
+    ]
+
+    # Count reservations per level
+    level_stats = reservations.values('user__level').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    level_labels = dict(User.LEVEL_CHOICES)
+    formatted_level_stats = [
+        {'label': level_labels.get(item['user__level'], 'Non défini'), 'value': item['count']}
+        for item in level_stats if item['user__level']
+    ]
+
     context = {
         'reservations': reservations,
         'pending_count': pending_count,
@@ -120,6 +147,8 @@ def librarian_dashboard(request):
         'total_books': total_books,
         'late_count': late_count,
         'popular_books': popular_books,
+        'dept_stats': formatted_dept_stats,
+        'level_stats': formatted_level_stats,
         'today': today,
     }
     return render(request, 'reservations/librarian_dashboard.html', context)

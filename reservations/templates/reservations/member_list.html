@@ -31,8 +31,8 @@
                     <thead>
                         <tr class="bg-surface-container-low/50">
                             <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Membre</th>
+                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Cursus</th>
                             <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Rôle</th>
-                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Email</th>
                             <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Activité</th>
                             <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Inscrit le</th>
                         </tr>
@@ -53,8 +53,14 @@
                                         </div>
                                         <div>
                                             <p class="font-bold text-on-surface">{{ member.username }}</p>
-                                            <p class="text-[10px] text-outline font-medium">{{ member.get_full_name|default:"Nom non renseigné" }}</p>
+                                            <p class="text-[10px] text-outline font-medium">{{ member.email }}</p>
                                         </div>
+                                    </div>
+                                </td>
+                                <td class="px-10 py-6">
+                                    <div class="space-y-1">
+                                        <p class="text-[10px] font-extrabold text-primary uppercase tracking-tighter">{{ member.get_department_display|default:"-" }}</p>
+                                        <p class="text-[11px] font-bold text-on-surface">{{ member.get_level_display|default:"" }} {{ member.filiere|default:"" }}</p>
                                     </div>
                                 </td>
                                 <td class="px-10 py-6">
@@ -69,9 +75,6 @@
                                             <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>Admin</option>
                                         </select>
                                     </form>
-                                </td>
-                                <td class="px-10 py-6 text-label-md text-on-surface-variant font-medium">
-                                    {{ member.email }}
                                 </td>
                                 <td class="px-10 py-6">
                                     <div class="flex items-center gap-2 text-outline font-bold text-[11px]">

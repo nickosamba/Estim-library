@@ -41,8 +41,72 @@
         </div>
     </div>
 
+    <!-- Academic Filters -->
+    <div class="space-y-4 mb-10" x-data="{ showFilters: false }">
+        <div class="flex items-center justify-between px-2">
+            <h3 class="text-[10px] font-black text-outline uppercase tracking-[0.2em]">Filtres Académiques</h3>
+            <button @click="showFilters = !showFilters" class="text-primary text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm" x-text="showFilters ? 'expand_less' : 'tune'"></span>
+                <span x-text="showFilters ? 'Masquer' : 'Affiner par cursus'"></span>
+            </button>
+        </div>
+        
+        <div x-show="showFilters" x-transition class="space-y-6 pt-4 border-t border-outline-variant/10">
+            <!-- Campuses -->
+            <div>
+                <p class="text-[9px] font-bold text-outline uppercase mb-3 ml-2">Campus / Sites</p>
+                <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <a href="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_department %}department={{ selected_department }}&{% endif %}{% if selected_level %}level={{ selected_level }}{% endif %}" 
+                       class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_campus %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                        Tous les sites
+                    </a>
+                    {% for c_code, c_name in campuses %}
+                        <a href="{% url 'books:catalog' %}?campus={{ c_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}" 
+                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_campus == c_code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                            {{ c_name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Departments -->
+            <div>
+                <p class="text-[9px] font-bold text-outline uppercase mb-3 ml-2">Facultés / Départements</p>
+                <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <a href="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_level %}level={{ selected_level }}&{% endif %}{% if selected_campus %}campus={{ selected_campus }}{% endif %}" 
+                       class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_department %}bg-secondary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                        Toutes
+                    </a>
+                    {% for dept_code, dept_name in departments %}
+                        <a href="{% url 'books:catalog' %}?department={{ dept_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}{% if selected_campus %}&campus={{ selected_campus }}{% endif %}" 
+                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_department == dept_code %}bg-secondary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                            {{ dept_name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Levels -->
+            <div>
+                <p class="text-[9px] font-bold text-outline uppercase mb-3 ml-2">Niveaux d'études</p>
+                <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <a href="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_department %}department={{ selected_department }}{% endif %}" 
+                       class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_level %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                        Tous
+                    </a>
+                    {% for lvl_code, lvl_name in levels %}
+                        <a href="{% url 'books:catalog' %}?level={{ lvl_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}" 
+                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_level == lvl_code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                            {{ lvl_name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Categories -->
-    <div class="flex gap-3 overflow-x-auto pb-4 mb-8 no-scrollbar scroll-smooth">
+    <div class="flex gap-3 overflow-x-auto pb-4 mb-8 no-scrollbar scroll-smooth border-b border-outline-variant/10">
         <input type="hidden" name="category" value="{{ selected_category|default:'' }}">
         <a href="{% url 'books:catalog' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
            class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if not selected_category %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">

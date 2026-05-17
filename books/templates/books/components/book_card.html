@@ -43,6 +43,9 @@
     <div class="px-1">
         <div class="flex items-center gap-2 mb-1.5">
             <span class="text-[9px] font-extrabold text-primary uppercase tracking-[0.15em] opacity-80">{{ book.category.name|default:"Général" }}</span>
+            {% if book.target_level %}
+                <span class="text-[8px] font-black bg-surface-container text-outline px-1.5 py-0.5 rounded-md uppercase">{{ book.get_target_level_display }}</span>
+            {% endif %}
         </div>
         <a href="{% url 'books:book_detail' book.slug %}">
             <h4 class="font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1 text-body-md mb-0.5">{{ book.title }}</h4>

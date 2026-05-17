@@ -175,6 +175,45 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Academic Analytics -->
+                <div class="bg-white rounded-[2.5rem] border border-outline-variant/20 card-shadow p-8">
+                    <h4 class="text-label-lg font-extrabold text-on-background mb-6 uppercase tracking-wider text-[11px]">Analyse par Département</h4>
+                    <div class="space-y-4">
+                        {% for stat in dept_stats %}
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
+                                    <span class="text-outline">{{ stat.label }}</span>
+                                    <span class="text-on-surface">{{ stat.value }}</span>
+                                </div>
+                                <div class="h-2 bg-surface-container rounded-full overflow-hidden">
+                                    <div class="h-full bg-secondary rounded-full" style="width: {% widthratio stat.value reservations.count 100 %}%"></div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-[10px] text-outline italic text-center">Aucune donnée disponible.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] border border-outline-variant/20 card-shadow p-8">
+                    <h4 class="text-label-lg font-extrabold text-on-background mb-6 uppercase tracking-wider text-[11px]">Fréquentation par Niveau</h4>
+                    <div class="space-y-4">
+                        {% for stat in level_stats %}
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
+                                    <span class="text-outline">{{ stat.label }}</span>
+                                    <span class="text-on-surface">{{ stat.value }}</span>
+                                </div>
+                                <div class="h-2 bg-surface-container rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary rounded-full" style="width: {% widthratio stat.value reservations.count 100 %}%"></div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-[10px] text-outline italic text-center">Aucune donnée disponible.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>

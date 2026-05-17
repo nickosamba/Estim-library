@@ -7,8 +7,34 @@ class User(AbstractUser):
         ('teacher', 'Enseignant'),
         ('admin', 'Administrateur'),
     )
+
+    CAMPUS_CHOICES = (
+        ('brazzaville', 'Brazzaville'),
+        ('pointe_noire', 'Pointe-Noire'),
+        ('ouesso', 'Ouesso'),
+    )
+
+    DEPARTMENT_CHOICES = (
+        ('sciences', 'Sciences et Technologies'),
+        ('management', 'Management et Gestion'),
+        ('lettres', 'Lettres et Sciences Humaines'),
+    )
+
+    LEVEL_CHOICES = (
+        ('L1', 'Licence 1'),
+        ('L2', 'Licence 2'),
+        ('L3', 'Licence 3'),
+        ('M1', 'Master 1'),
+        ('M2', 'Master 2'),
+        ('DOC', 'Doctorat'),
+    )
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
+    campus = models.CharField(max_length=50, choices=CAMPUS_CHOICES, blank=True, null=True)
+    department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES, blank=True, null=True)
+    filiere = models.CharField(max_length=100, blank=True, null=True, help_text="Ex: Informatique, Droit, Marketing")
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, blank=True, null=True)
+    
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     bio = models.TextField(max_length=500, blank=True)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
