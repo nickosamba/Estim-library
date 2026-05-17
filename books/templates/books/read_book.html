@@ -63,7 +63,10 @@
             <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-surface-variant/20 rounded-xl transition-all" title="Menu de navigation">
                 <span class="material-symbols-outlined" x-text="sidebarOpen ? 'menu_open' : 'menu'"></span>
             </button>
-            <a href="{% url 'books:book_detail' book.slug %}" class="p-2 hover:bg-surface-variant/20 rounded-full transition-all" title="Fermer la liseuse">
+            <a href="{% url 'books:book_detail' book.slug %}" 
+               @click.prevent="window.history.length > 1 ? window.history.back() : window.location.href='{% url 'books:book_detail' book.slug %}'"
+               class="p-2 hover:bg-surface-variant/20 rounded-full transition-all" 
+               title="Fermer la liseuse">
                 <span class="material-symbols-outlined">close</span>
             </a>
             <div class="hidden sm:block">
