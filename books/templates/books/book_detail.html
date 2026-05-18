@@ -125,31 +125,50 @@
             <span class="font-bold text-label-md">{% if book.is_available %}Disponible en rayon{% else %}Indisponible actuellement{% endif %}</span>
         </div>
         
-        {% if book.target_campus %}
-            <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-outline">
-                <span class="material-symbols-outlined text-sm">location_on</span>
-                Localisation physique : <span class="text-primary">{{ book.get_target_campus_display }}</span>
+        {% if book.target_campuses.exists %}
+            <div class="flex flex-col items-center gap-2">
+                <span class="text-[10px] font-black uppercase tracking-widest text-outline opacity-60">Localisation physique</span>
+                <div class="flex flex-wrap justify-center gap-2">
+                    {% for campus in book.target_campuses.all %}
+                        <span class="px-3 py-1 rounded-lg bg-surface-container text-primary text-[10px] font-bold uppercase border border-outline-variant/10 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-xs">location_on</span>
+                            {{ campus.name }}
+                        </span>
+                    {% endfor %}
+                </div>
             </div>
         {% endif %}
     </div>
 
     <!-- Intelligent Inter-Campus Alert -->
-    {% if user.is_authenticated and book.target_campus and book.target_campus != 'all' and user.campus and user.campus != book.target_campus %}
-        <div class="mb-12 p-6 rounded-[2rem] {% if book.pdf_file %}bg-primary/10 border-primary/20 text-primary{% else %}bg-secondary/10 border-secondary/20 text-secondary{% endif %} border flex gap-5 items-start animate-in slide-in-from-top-4 duration-700">
-            <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-                <span class="material-symbols-outlined">{% if book.pdf_file %}picture_as_pdf{% else %}local_shipping{% endif %}</span>
-            </div>
-            <div>
-                <h4 class="font-extrabold text-label-md uppercase tracking-wider mb-1">Information de transfert</h4>
-                <p class="text-body-md opacity-80 leading-snug">
-                    {% if book.pdf_file %}
-                        Cet ouvrage est à <strong>{{ book.get_target_campus_display }}</strong>, mais vous pouvez le lire immédiatement en <strong>version PDF</strong> depuis votre campus de <strong>{{ user.get_campus_display }}</strong>.
-                    {% else %}
-                        Cet ouvrage est situé à <strong>{{ book.get_target_campus_display }}</strong>. Sa réservation depuis <strong>{{ user.get_campus_display }}</strong> pourra nécessiter un délai de transfert entre les sites.
-                    {% endif %}
-                </p>
-            </div>
-        </div>
+    {% if user.is_authenticated %}
+        {% with campuses_codes=book.target_campuses.all|regroup:"code" %}
+            {# Check if student's campus is NOT in book's campuses AND book is NOT in 'all' campuses #}
+            {% set is_local = False %}
+            {% for c in book.target_campuses.all %}
+                {% if c.code == user.campus or c.code == 'all' %}
+                    {% set is_local = True %}
+                {% endif %}
+            {% endfor %}
+
+            {% if not is_local and book.target_campuses.exists %}
+                <div class="mb-12 p-6 rounded-[2rem] {% if book.pdf_file %}bg-primary/10 border-primary/20 text-primary{% else %}bg-secondary/10 border-secondary/20 text-secondary{% endif %} border flex gap-5 items-start animate-in slide-in-from-top-4 duration-700">
+                    <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined">{% if book.pdf_file %}picture_as_pdf{% else %}local_shipping{% endif %}</span>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-label-md uppercase tracking-wider mb-1">Information de transfert</h4>
+                        <p class="text-body-md opacity-80 leading-snug">
+                            {% if book.pdf_file %}
+                                Cet ouvrage n'est pas présent à <strong>{{ user.get_campus_display }}</strong>, mais vous pouvez le lire immédiatement en <strong>version PDF</strong>.
+                            {% else %}
+                                Cet ouvrage est localisé sur d'autres sites. Sa réservation depuis <strong>{{ user.get_campus_display }}</strong> pourra nécessiter un délai de transfert.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
     {% endif %}
 
     <div class="african-geometric-border w-full mb-12"></div>

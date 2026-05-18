@@ -60,10 +60,10 @@
                        class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_campus %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
                         Tous les sites
                     </a>
-                    {% for c_code, c_name in campuses %}
-                        <a href="{% url 'books:catalog' %}?campus={{ c_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}" 
-                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_campus == c_code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
-                            {{ c_name }}
+                    {% for campus in campuses %}
+                        <a href="{% url 'books:catalog' %}?campus={{ campus.code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}" 
+                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_campus == campus.code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                            {{ campus.name }}
                         </a>
                     {% endfor %}
                 </div>

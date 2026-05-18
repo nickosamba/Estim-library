@@ -17,14 +17,17 @@ class Author(models.Model):
     def __str__(self):
         return self.name
 
-class Book(models.Model):
-    CAMPUS_CHOICES = (
-        ('all', 'Tous les campus'),
-        ('brazzaville', 'Brazzaville'),
-        ('pointe_noire', 'Pointe-Noire'),
-        ('ouesso', 'Ouesso'),
-    )
+class Campus(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=50, unique=True)
 
+    class Meta:
+        verbose_name_plural = "Campuses"
+
+    def __str__(self):
+        return self.name
+
+class Book(models.Model):
     DEPARTMENT_CHOICES = (
         ('sciences', 'Sciences et Technologies'),
         ('management', 'Management et Gestion'),
@@ -46,7 +49,7 @@ class Book(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='books')
     
     # Academic targets
-    target_campus = models.CharField(max_length=50, choices=CAMPUS_CHOICES, blank=True, null=True)
+    target_campuses = models.ManyToManyField(Campus, blank=True, related_name='books')
     target_department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES, blank=True, null=True)
     target_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, blank=True, null=True)
     target_filiere = models.CharField(max_length=100, blank=True, null=True, help_text="Option spécifique (ex: Informatique)")

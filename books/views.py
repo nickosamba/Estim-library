@@ -27,24 +27,25 @@ def book_list(request):
     
     # Smart Recommendations based on user profile (Academic + Location)
     if request.user.is_authenticated and request.user.role == 'student':
+        # Recommended if in student's department AND student's campus (or 'all' campus)
         recommendations = Book.objects.filter(
             is_available=True,
             target_department=request.user.department,
-            target_campus__in=[request.user.campus, 'all']
-        ).exclude(cover_image='').order_by('?')[:3]
+            target_campuses__code__in=[request.user.campus, 'all']
+        ).distinct().exclude(cover_image='').order_by('?')[:3]
         
         # Fallback 1: Same Department, any Campus
         if not recommendations.exists():
             recommendations = Book.objects.filter(
                 is_available=True,
                 target_department=request.user.department
-            ).exclude(cover_image='').order_by('?')[:3]
+            ).distinct().exclude(cover_image='').order_by('?')[:3]
             
         # Fallback 2: General
         if not recommendations.exists():
-            recommendations = Book.objects.filter(is_available=True).exclude(cover_image='').order_by('?')[:3]
+            recommendations = Book.objects.filter(is_available=True).distinct().exclude(cover_image='').order_by('?')[:3]
     else:
-        recommendations = Book.objects.filter(is_available=True).exclude(cover_image='').order_by('?')[:3]
+        recommendations = Book.objects.filter(is_available=True).distinct().exclude(cover_image='').order_by('?')[:3]
     
     reading_progress = []
     if request.user.is_authenticated:
@@ -419,7 +420,7 @@ def catalog(request):
     category_id = request.GET.get('category')
     dept = request.GET.get('department')
     level = request.GET.get('level')
-    campus = request.GET.get('campus')
+    campus_code = request.GET.get('campus')
     
     books = Book.objects.filter(is_available=True)
     
@@ -439,22 +440,23 @@ def catalog(request):
     if level:
         books = books.filter(target_level=level)
 
-    if campus:
-        books = books.filter(Q(target_campus=campus) | Q(target_campus='all'))
+    if campus_code:
+        books = books.filter(Q(target_campuses__code=campus_code) | Q(target_campuses__code='all')).distinct()
 
     categories = Category.objects.all()
+    campuses = Campus.objects.all()
     
     context = {
         'books': books,
         'categories': categories,
         'departments': Book.DEPARTMENT_CHOICES,
         'levels': Book.LEVEL_CHOICES,
-        'campuses': Book.CAMPUS_CHOICES,
+        'campuses': campuses,
         'search_query': query,
         'selected_category': category_id,
         'selected_department': dept,
         'selected_level': level,
-        'selected_campus': campus,
+        'selected_campus': campus_code,
     }
     
     if request.headers.get('HX-Request'):
