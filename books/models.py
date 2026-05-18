@@ -19,6 +19,7 @@ class Author(models.Model):
 
 class Book(models.Model):
     CAMPUS_CHOICES = (
+        ('all', 'Tous les campus'),
         ('brazzaville', 'Brazzaville'),
         ('pointe_noire', 'Pointe-Noire'),
         ('ouesso', 'Ouesso'),

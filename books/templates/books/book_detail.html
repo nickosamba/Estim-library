@@ -134,7 +134,7 @@
     </div>
 
     <!-- Intelligent Inter-Campus Alert -->
-    {% if user.is_authenticated and book.target_campus and user.campus and user.campus != book.target_campus %}
+    {% if user.is_authenticated and book.target_campus and book.target_campus != 'all' and user.campus and user.campus != book.target_campus %}
         <div class="mb-12 p-6 rounded-[2rem] {% if book.pdf_file %}bg-primary/10 border-primary/20 text-primary{% else %}bg-secondary/10 border-secondary/20 text-secondary{% endif %} border flex gap-5 items-start animate-in slide-in-from-top-4 duration-700">
             <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
                 <span class="material-symbols-outlined">{% if book.pdf_file %}picture_as_pdf{% else %}local_shipping{% endif %}</span>

@@ -9,6 +9,7 @@ class User(AbstractUser):
     )
 
     CAMPUS_CHOICES = (
+        ('all', 'Tous les campus'),
         ('brazzaville', 'Brazzaville'),
         ('pointe_noire', 'Pointe-Noire'),
         ('ouesso', 'Ouesso'),

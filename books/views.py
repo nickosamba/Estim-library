@@ -30,7 +30,7 @@ def book_list(request):
         recommendations = Book.objects.filter(
             is_available=True,
             target_department=request.user.department,
-            target_campus=request.user.campus
+            target_campus__in=[request.user.campus, 'all']
         ).exclude(cover_image='').order_by('?')[:3]
         
         # Fallback 1: Same Department, any Campus
@@ -440,7 +440,7 @@ def catalog(request):
         books = books.filter(target_level=level)
 
     if campus:
-        books = books.filter(target_campus=campus)
+        books = books.filter(Q(target_campus=campus) | Q(target_campus='all'))
 
     categories = Category.objects.all()
     
