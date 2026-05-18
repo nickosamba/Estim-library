@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
-from .models import Book, Category, Favorite, ReadingProgress, Review, Bookmark, Annotation, Chapter
+from .models import Book, Category, Favorite, ReadingProgress, Review, Bookmark, Annotation, Chapter, Campus
 from .forms import ReviewForm, BookForm, AuthorForm
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required, user_passes_test
