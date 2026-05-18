@@ -18,7 +18,7 @@ class BookForm(forms.ModelForm):
     class Meta:
         model = Book
         fields = [
-            'title', 'author', 'category', 'target_department', 'target_level', 
+            'title', 'author', 'category', 'target_campuses', 'target_department', 'target_level', 
             'target_filiere', 'description', 'isbn', 'publication_year', 
             'copies_available', 'cover_image', 'pdf_file', 'is_available'
         ]
@@ -26,6 +26,7 @@ class BookForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'w-full p-4 rounded-2xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all'}),
             'author': forms.Select(attrs={'class': 'w-full p-4 rounded-2xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all'}),
             'category': forms.Select(attrs={'class': 'w-full p-4 rounded-2xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all'}),
+            'target_campuses': forms.CheckboxSelectMultiple(),
             'target_department': forms.Select(attrs={'class': 'w-full p-4 rounded-2xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all'}),
             'target_level': forms.Select(attrs={'class': 'w-full p-4 rounded-2xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all'}),
             'target_filiere': forms.TextInput(attrs={'class': 'w-full p-4 rounded-2xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all', 'placeholder': 'Ex: Informatique, Droit'}),
