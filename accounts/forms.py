@@ -32,7 +32,16 @@ class ProfileUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
+        from books.models import Campus
+        
+        # Customize campus field
+        if 'campus' in self.fields:
+            self.fields['campus'].queryset = Campus.objects.exclude(code='all')
+            self.fields['campus'].label = "Campus de rattachement"
+            self.fields['campus'].empty_label = "Sélectionnez votre campus"
+
+        # Apply consistent styling
+        for field_name, field in self.fields.items():
             field.widget.attrs.update({
                 'class': 'block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md bg-surface-container-low'
             })

@@ -5,152 +5,297 @@
 
 {% block extra_css %}
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --reader-bg: #f3f4f6;
+        --reader-header-bg: rgba(255, 255, 255, 0.8);
+        --reader-text: #111827;
+        --reader-accent: #755b00;
+    }
+
+    .dark {
+        --reader-bg: #0f110f;
+        --reader-header-bg: rgba(20, 22, 20, 0.8);
+        --reader-text: #f9fafb;
+        --reader-accent: #f2c230;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+
     .no-select { -webkit-user-select: none; user-select: none; }
-    .pdf-canvas-container { 
-        box-shadow: 0 10px 50px rgba(0,0,0,0.1);
-        margin: 20px auto;
-        background: white;
-        transition: transform 0.2s ease;
-    }
-    .dark .pdf-canvas-container { 
-        filter: invert(90%) hue-rotate(180deg) contrast(90%);
-        box-shadow: 0 10px 50px rgba(0,0,0,0.4);
-    }
-    .reader-bg { background: #f8f9fa; transition: background 0.3s ease; }
-    .dark .reader-bg { background: #121412; }
     
-    #pdf-render-container {
-        overflow-y: auto;
-        height: 100%;
-        scroll-behavior: smooth;
+    .glass-header {
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        background: var(--reader-header-bg);
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1);
     }
+
+    .reader-bg {
+        background: var(--reader-bg);
+        transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #pdf-render-container {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        padding-bottom: 100px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .pdf-canvas-container { 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        margin: 40px auto;
+        background: white;
+        border-radius: 4px;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 95%;
+    }
+
+    .dark .pdf-canvas-container { 
+        filter: invert(90%) hue-rotate(180deg) contrast(95%);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
     .loading-overlay {
         position: absolute;
         inset: 0;
-        background: rgba(255,255,255,0.8);
+        background: var(--reader-bg);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 100;
     }
+
+    .sidebar-transition {
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .control-btn {
+        @apply p-2 rounded-xl transition-all duration-200 flex items-center justify-center;
+    }
+    .control-btn:hover {
+        background: rgba(128, 128, 128, 0.1);
+    }
+    .control-btn:active {
+        @apply scale-90;
+    }
+
+    .progress-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: var(--reader-accent);
+        transition: width 0.3s ease;
+        z-index: 30;
+    }
+
+    [x-cloak] { display: none !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="fixed inset-0 z-[60] flex flex-col no-select overflow-hidden reader-bg" 
-     x-data="pdfReader()" 
-     x-init="initReader('{{ book.pdf_file.url }}', {{ progress.last_page }})"
+<div class="fixed inset-0 z-[60] flex flex-col overflow-hidden reader-bg" 
+     x-data="pdfReaderComponent" 
+     x-init="initReader('{{ book.pdf_file.url }}', {{ progress.last_page|default:1 }})"
      :class="darkMode ? 'dark' : ''">
 
     <!-- Header -->
-    <div class="px-margin-mobile py-3 flex items-center justify-between glass-effect border-b border-outline-variant/30 shadow-sm relative z-20 transition-all duration-500"
-         :class="zenMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'">
+    <header class="glass-header h-16 flex-shrink-0 flex items-center justify-between px-6 relative z-50 transition-all duration-500"
+            :class="zenMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'">
         
-        <div class="flex items-center gap-4">
-            <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-primary/10 rounded-xl transition-all">
-                <span class="material-symbols-outlined" x-text="sidebarOpen ? 'menu_open' : 'menu'"></span>
+        <div class="flex items-center gap-5">
+            <button @click="sidebarOpen = !sidebarOpen" class="control-btn text-on-background">
+                <span class="material-symbols-outlined text-[22px]" x-text="sidebarOpen ? 'dock_to_left' : 'menu'"></span>
             </button>
-            <a href="{% url 'books:book_detail' book.slug %}" class="p-2 hover:bg-error/10 text-error rounded-full transition-all">
-                <span class="material-symbols-outlined">close</span>
+            <div class="h-6 w-px bg-gray-300/30"></div>
+            <a href="{% url 'books:book_detail' book.slug %}" class="control-btn text-error/80 hover:text-error hover:bg-error/10">
+                <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </a>
-            <div class="hidden md:block">
-                <h2 class="font-extrabold text-on-background text-label-md">{{ book.title }}</h2>
-                <p class="text-[9px] font-bold text-outline uppercase tracking-widest">{{ book.author.name }}</p>
+            <div class="hidden lg:block ml-2">
+                <h2 class="font-bold text-on-background text-sm truncate max-w-[300px]">{{ book.title }}</h2>
+                <p class="text-[10px] font-medium text-outline uppercase tracking-wider">{{ book.author.name }}</p>
             </div>
         </div>
 
         <!-- Controls -->
-        <div class="flex items-center gap-2">
-            <div class="flex items-center bg-surface-container-low rounded-xl border border-outline-variant/20 px-2">
-                <button @click="prevPage()" :disabled="pageNum <= 1" class="p-2 disabled:opacity-30">
-                    <span class="material-symbols-outlined text-sm">chevron_left</span>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center bg-gray-100/50 dark:bg-white/5 rounded-2xl p-1 border border-gray-200/20">
+                <button @click="prevPage()" :disabled="pageNum <= 1" class="control-btn w-10 h-10 disabled:opacity-20 text-on-background">
+                    <span class="material-symbols-outlined text-lg">chevron_left</span>
                 </button>
-                <div class="flex items-center gap-1 px-2 border-x border-outline-variant/10">
-                    <input type="number" x-model.number="pageNum" @change="queueRenderPage(pageNum)" class="w-10 bg-transparent border-none p-0 text-center font-black text-xs focus:ring-0">
-                    <span class="text-[10px] text-outline">/ <span x-text="pageCount"></span></span>
+                <div class="flex items-center gap-2 px-3 text-on-background">
+                    <input type="number" x-model.number="pageNum" @change="goToPage(pageNum)" 
+                           class="w-10 bg-transparent border-none p-0 text-center font-bold text-sm focus:ring-0">
+                    <span class="text-xs text-outline font-medium">/ <span x-text="pageCount"></span></span>
                 </div>
-                <button @click="nextPage()" :disabled="pageNum >= pageCount" class="p-2 disabled:opacity-30">
-                    <span class="material-symbols-outlined text-sm">chevron_right</span>
+                <button @click="nextPage()" :disabled="pageNum >= pageCount" class="control-btn w-10 h-10 disabled:opacity-20 text-on-background">
+                    <span class="material-symbols-outlined text-lg">chevron_right</span>
                 </button>
             </div>
 
-            <div class="h-6 w-px bg-outline-variant/20 mx-1"></div>
+            <div class="h-6 w-px bg-gray-300/30 mx-1"></div>
 
-            <div class="flex items-center bg-surface-container-low rounded-xl border border-outline-variant/20 px-1">
-                <button @click="changeZoom(-0.1)" class="p-2 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">zoom_out</span></button>
-                <span class="text-[9px] font-black w-10 text-center" x-text="Math.round(scale * 100) + '%'"></span>
-                <button @click="changeZoom(0.1)" class="p-2 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">zoom_in</span></button>
+            <div class="flex items-center gap-1 text-on-background">
+                <button @click="changeZoom(-0.1)" class="control-btn" title="Zoom Arrière">
+                    <span class="material-symbols-outlined text-[20px]">remove</span>
+                </button>
+                <span class="text-[10px] font-bold w-12 text-center" x-text="Math.round(scale * 100) + '%'"></span>
+                <button @click="changeZoom(0.1)" class="control-btn" title="Zoom Avant">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                </button>
             </div>
 
-            <button @click="darkMode = !darkMode" class="p-2.5 rounded-xl transition-all" :class="darkMode ? 'bg-primary text-white' : 'bg-surface-container-low text-outline'">
-                <span class="material-symbols-outlined text-[18px]" x-text="darkMode ? 'light_mode' : 'dark_mode'"></span>
+            <button @click="darkMode = !darkMode" class="control-btn w-10 h-10 ml-2" 
+                    :class="darkMode ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-outline'">
+                <span class="material-symbols-outlined text-[20px]" x-text="darkMode ? 'light_mode' : 'dark_mode'"></span>
             </button>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="flex-grow flex relative">
+        <div class="progress-bar" :style="`width: ${(pageNum / pageCount) * 100}%`" x-show="pageCount > 0"></div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-grow flex min-h-0 relative">
         <!-- Sidebar -->
-        <div class="absolute inset-y-0 left-0 w-80 bg-white dark:bg-[#1a1c1a] border-r border-outline-variant/30 z-30 transition-transform duration-500 shadow-2xl flex flex-col"
-             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
-            <div class="p-4 border-b border-outline-variant/20 flex gap-2">
-                <button @click="activeTab = 'sommaire'" :class="activeTab == 'sommaire' ? 'bg-primary text-white' : 'text-outline'" class="flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter">Sommaire</button>
-                <button @click="activeTab = 'notes'" :class="activeTab == 'notes' ? 'bg-primary text-white' : 'text-outline'" class="flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter">Notes</button>
+        <aside class="absolute inset-y-0 left-0 w-80 bg-white dark:bg-[#151715] border-r border-gray-200/10 z-40 sidebar-transition flex flex-col shadow-2xl"
+               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+            <!-- ... keep sidebar content ... -->
+            
+            <div class="p-6">
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-outline mb-6">Bibliothèque</h3>
+                <div class="flex p-1 bg-gray-100 dark:bg-white/5 rounded-xl">
+                    <button @click="activeTab = 'sommaire'" 
+                            :class="activeTab == 'sommaire' ? 'bg-white dark:bg-white/10 shadow-sm text-primary font-bold' : 'text-outline hover:text-on-background'"
+                            class="flex-1 py-2 rounded-lg text-[11px] uppercase transition-all">Sommaire</button>
+                    <button @click="activeTab = 'notes'" 
+                            :class="activeTab == 'notes' ? 'bg-white dark:bg-white/10 shadow-sm text-primary font-bold' : 'text-outline hover:text-on-background'"
+                            class="flex-1 py-2 rounded-lg text-[11px] uppercase transition-all">Notes</button>
+                </div>
             </div>
-            <div class="flex-grow overflow-y-auto p-4">
-                <div x-show="activeTab == 'sommaire'" class="space-y-2">
+
+            <div class="flex-grow overflow-y-auto px-4 pb-10 custom-scrollbar">
+                <!-- Chapters -->
+                <div x-show="activeTab == 'sommaire'" class="space-y-1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2">
                     {% for chapter in chapters %}
-                        <button @click="goToPage({{ chapter.page_number }})" class="w-full text-left p-3 rounded-xl hover:bg-primary/5 transition-all group flex justify-between items-center">
-                            <span class="text-xs font-bold text-on-surface group-hover:text-primary">{{ chapter.title }}</span>
-                            <span class="text-[9px] font-black text-outline/40">p.{{ chapter.page_number }}</span>
+                        <button @click="goToPage({{ chapter.page_number }})" 
+                                class="w-full text-left p-3.5 rounded-xl hover:bg-primary/5 transition-all group flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary transition-all"></span>
+                                <span class="text-[13px] font-medium text-on-background/80 group-hover:text-primary transition-colors">{{ chapter.title }}</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-outline/40">p.{{ chapter.page_number }}</span>
                         </button>
+                    {% empty %}
+                        <div class="mt-10 text-center px-6">
+                            <span class="material-symbols-outlined text-outline/20 text-4xl mb-3">list_alt</span>
+                            <p class="text-[11px] text-outline font-medium uppercase tracking-wider">Aucun sommaire indexé</p>
+                        </div>
                     {% endfor %}
                 </div>
-                <div x-show="activeTab == 'notes'" class="space-y-4">
+
+                <!-- Annotations -->
+                <div x-show="activeTab == 'notes'" class="space-y-4" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2">
                     {% for annotation in annotations %}
-                        <div class="p-4 bg-secondary/5 rounded-2xl border border-secondary/10">
-                            <div class="flex justify-between mb-2">
-                                <span class="bg-secondary/10 text-secondary px-2 py-0.5 rounded text-[10px] font-black">P.{{ annotation.page_number }}</span>
-                                <button @click="goToPage({{ annotation.page_number }})" class="text-primary text-[10px] font-black uppercase">Voir</button>
+                        <div class="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200/10 group">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-lg text-[10px] font-bold">PAGE {{ annotation.page_number }}</span>
+                                <button @click="goToPage({{ annotation.page_number }})" class="text-outline hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">visibility</span>
+                                </button>
                             </div>
-                            <p class="text-xs text-on-surface">{{ annotation.content }}</p>
+                            <p class="text-[13px] leading-relaxed text-on-surface/80">{{ annotation.content }}</p>
+                        </div>
+                    {% empty %}
+                        <div class="mt-10 text-center px-6">
+                            <span class="material-symbols-outlined text-outline/20 text-4xl mb-3">edit_note</span>
+                            <p class="text-[11px] text-outline font-medium uppercase tracking-wider">Aucune note personnelle</p>
                         </div>
                     {% endfor %}
                 </div>
             </div>
-        </div>
+        </aside>
 
-        <!-- PDF Render Area -->
-        <div id="pdf-render-container" class="flex-grow relative pt-4 pb-20" @click="zenMode = !zenMode">
+        <!-- Reading Area -->
+        <div id="pdf-render-container" class="flex-grow relative" @click="if($event.target === $el) zenMode = !zenMode">
+            <!-- Loading -->
             <div x-show="isLoading" class="loading-overlay">
-                <div class="flex flex-col items-center gap-4">
-                    <span class="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
-                    <p class="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Chargement du manuscrit...</p>
+                <div class="flex flex-col items-center gap-5">
+                    <div class="relative flex items-center justify-center">
+                        <div class="w-16 h-16 border-4 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                        <span class="absolute text-[11px] font-black text-primary" x-text="loadPercent + '%'"></span>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[11px] font-black text-primary uppercase tracking-[0.4em] mb-1">Immersion en cours</p>
+                        <p class="text-[9px] text-outline font-medium">Préparation du manuscrit numérique...</p>
+                    </div>
                 </div>
             </div>
-            <div class="pdf-canvas-container" :style="`transform: scale(${scale}); transform-origin: top center;`" id="canvas-wrapper">
-                <canvas id="pdf-canvas"></canvas>
+            
+            <!-- Error State -->
+            <div x-show="errorMessage" class="absolute inset-0 flex items-center justify-center z-[110] bg-var(--reader-bg) p-8 text-center" x-cloak>
+                <div class="max-w-md bg-white dark:bg-[#1a1c1a] p-12 rounded-[3rem] shadow-2xl border border-gray-200/10">
+                    <div class="w-20 h-20 bg-error/10 text-error rounded-3xl flex items-center justify-center mx-auto mb-8">
+                        <span class="material-symbols-outlined text-4xl">cloud_off</span>
+                    </div>
+                    <h3 class="text-2xl font-black mb-4 text-on-background">Échec du chargement</h3>
+                    <p class="text-sm text-outline mb-10 leading-relaxed" x-text="errorMessage"></p>
+                    <div class="flex flex-col gap-4">
+                        <button @click="location.reload()" class="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/30 transition-transform active:scale-95">Réessayer maintenant</button>
+                        <a href="{{ book.pdf_file.url }}" download class="text-[11px] font-bold text-outline hover:text-primary transition-colors uppercase tracking-widest">Récupérer le fichier PDF</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Rendering -->
+            <div class="pdf-canvas-container mx-auto" 
+                 :style="`width: ${scale * 800}px`" id="canvas-wrapper">
+                <canvas id="pdf-canvas" class="w-full bg-white"></canvas>
             </div>
         </div>
 
-        <!-- Floating Note Button -->
-        <button @click="$refs.noteModal.showModal()" class="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-40">
-            <span class="material-symbols-outlined">edit_note</span>
-        </button>
+        <!-- Floating Action Button -->
+        <div class="fixed bottom-10 right-10 flex flex-col gap-4 z-[55]" x-show="!zenMode" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-10 opacity-0">
+            <button @click="$refs.noteModal.showModal()" 
+                    class="w-14 h-14 bg-primary text-white rounded-2xl shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-110 active:scale-90 transition-all">
+                <span class="material-symbols-outlined text-2xl">edit_square</span>
+            </button>
+            <button @click="window.scrollTo({top: 0, behavior: 'smooth'})" 
+                    class="w-12 h-12 bg-white dark:bg-[#2a2c2a] text-on-background rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 transition-all border border-gray-200/10">
+                <span class="material-symbols-outlined text-xl">vertical_align_top</span>
+            </button>
+        </div>
     </div>
 
     <!-- Modals -->
-    <dialog x-ref="noteModal" class="rounded-[2rem] p-8 border-none shadow-2xl bg-white max-w-md w-full backdrop:bg-black/50">
-        <h3 class="text-2xl font-extrabold tracking-tight mb-4">Nouvelle <span class="text-secondary">Annotation</span></h3>
+    <dialog x-ref="noteModal" class="rounded-[2.5rem] p-10 border-none shadow-2xl bg-white dark:bg-[#1a1c1a] max-w-md w-full backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-2xl font-black tracking-tight text-on-background mb-1">Prendre une <span class="text-primary">Note</span></h3>
+                <p class="text-[10px] font-bold text-outline uppercase tracking-widest">Page <span x-text="pageNum" class="text-primary"></span> du document</p>
+            </div>
+            <button @click="$refs.noteModal.close()" class="text-outline hover:text-error transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
         <form action="{% url 'books:add_annotation' book.slug %}" method="POST">
             {% csrf_token %}
             <input type="hidden" name="page" :value="pageNum">
-            <div class="space-y-4">
-                <p class="text-[10px] font-black text-outline uppercase tracking-widest">Page <span x-text="pageNum" class="text-secondary"></span></p>
-                <textarea name="content" rows="5" placeholder="Notez vos réflexions ici..." class="w-full p-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary font-medium"></textarea>
-                <div class="flex gap-3">
-                    <button type="button" @click="$refs.noteModal.close()" class="flex-grow py-4 rounded-2xl font-bold text-outline">Annuler</button>
-                    <button type="submit" class="flex-grow py-4 rounded-2xl font-bold bg-secondary text-white shadow-lg">Enregistrer</button>
+            <div class="space-y-6">
+                <textarea name="content" rows="6" placeholder="Quelles sont vos réflexions sur ce passage ?" 
+                          class="w-full p-6 rounded-3xl bg-gray-50 dark:bg-white/5 border-none focus:ring-2 focus:ring-primary/30 font-medium text-sm text-on-background" required></textarea>
+                <div class="flex gap-4">
+                    <button type="button" @click="$refs.noteModal.close()" 
+                            class="flex-1 py-4 rounded-2xl font-bold text-outline hover:bg-gray-100 dark:hover:bg-white/5 transition-all uppercase text-[11px] tracking-widest">Abandonner</button>
+                    <button type="submit" 
+                            class="flex-1 py-4 rounded-2xl font-bold bg-primary text-white shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all uppercase text-[11px] tracking-widest">Enregistrer</button>
                 </div>
             </div>
         </form>
@@ -159,110 +304,138 @@
 {% endblock %}
 
 {% block extra_js %}
-<script type="module">
-    import * as pdfjsLib from "{% static 'vendor/pdfjs/pdf.mjs' %}";
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'vendor/pdfjs/pdf.worker.mjs' %}";
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+    document.addEventListener('alpine:init', () => {
+        // Core PDF.js objects handled outside Alpine proxy system for stability
+        let _pdfDoc = null;
+        let _canvas = null;
+        let _ctx = null;
 
-    window.pdfReader = () => ({
-        pdfDoc: null,
-        pageNum: 1,
-        pageRendering: false,
-        pageNumPending: null,
-        scale: 1.0,
-        pageCount: 0,
-        isLoading: true,
-        darkMode: false,
-        sidebarOpen: false,
-        zenMode: false,
-        activeTab: 'sommaire',
-        ctx: null,
-        canvas: null,
+        Alpine.data('pdfReaderComponent', () => ({
+            pageNum: 1,
+            pageCount: 0,
+            scale: 1.0,
+            isLoading: true,
+            loadPercent: 0,
+            errorMessage: '',
+            pageRendering: false,
+            pageNumPending: null,
+            darkMode: false,
+            sidebarOpen: false,
+            zenMode: false,
+            activeTab: 'sommaire',
 
-        async initReader(url, startPage) {
-            this.canvas = document.getElementById('pdf-canvas');
-            this.ctx = this.canvas.getContext('2d');
-            this.pageNum = startPage || 1;
+            async initReader(url, startPage) {
+                console.log("Professional E-Reader: Starting...");
+                _canvas = document.getElementById('pdf-canvas');
+                _ctx = _canvas.getContext('2d');
+                this.pageNum = parseInt(startPage) || 1;
 
-            try {
-                this.pdfDoc = await pdfjsLib.getDocument(url).promise;
-                this.pageCount = this.pdfDoc.numPages;
+                try {
+                    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    
+                    const loadingTask = pdfjsLib.getDocument({
+                        url: url,
+                        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                        cMapPacked: true,
+                    });
+
+                    loadingTask.onProgress = (progress) => {
+                        if (progress.total > 0) {
+                            this.loadPercent = Math.round((progress.loaded / progress.total) * 100);
+                        }
+                    };
+
+                    _pdfDoc = await loadingTask.promise;
+                    this.pageCount = _pdfDoc.numPages;
+                    
+                    await this.renderPage(this.pageNum);
+                    this.isLoading = false;
+                    console.log("Professional E-Reader: Ready.");
+                } catch (error) {
+                    console.error("Reader Core Error:", error);
+                    this.errorMessage = "Impossible de charger le manuscrit numérique : " + error.message;
+                    this.isLoading = false;
+                }
+            },
+
+            async renderPage(num) {
+                if (this.pageRendering) {
+                    this.pageNumPending = num;
+                    return;
+                }
+                this.pageRendering = true;
+
+                try {
+                    const page = await _pdfDoc.getPage(num);
+                    // Optimized internal scale for high-DPI clarity
+                    const viewport = page.getViewport({ scale: 2.0 }); 
+                    
+                    _canvas.height = viewport.height;
+                    _canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: _ctx,
+                        viewport: viewport
+                    };
+
+                    await page.render(renderContext).promise;
+                } catch (error) {
+                    console.error("Render Engine Error:", error);
+                } finally {
+                    this.pageRendering = false;
+                    if (this.pageNumPending !== null) {
+                        const nextNum = this.pageNumPending;
+                        this.pageNumPending = null;
+                        this.renderPage(nextNum);
+                    }
+                }
+                
+                // Track progress
+                this.syncProgress(num);
+            },
+
+            prevPage() {
+                if (this.pageNum <= 1) return;
+                this.pageNum--;
                 this.renderPage(this.pageNum);
-                this.isLoading = false;
-            } catch (error) {
-                console.error("Error loading PDF:", error);
-                alert("Erreur lors du chargement du PDF.");
-            }
-        },
+            },
 
-        async renderPage(num) {
-            this.pageRendering = true;
-            const page = await this.pdfDoc.getPage(num);
-            
-            const viewport = page.getViewport({ scale: 2.0 }); // Render at 2x for sharpness
-            this.canvas.height = viewport.height;
-            this.canvas.width = viewport.width;
-
-            const renderContext = {
-                canvasContext: this.ctx,
-                viewport: viewport
-            };
-
-            await page.render(renderContext).promise;
-            this.pageRendering = false;
-
-            if (this.pageNumPending !== null) {
-                this.renderPage(this.pageNumPending);
-                this.pageNumPending = null;
-            }
-
-            // Sync with backend
-            this.syncProgress(num);
-        },
-
-        queueRenderPage(num) {
-            if (num < 1) this.pageNum = 1;
-            if (num > this.pageCount) this.pageNum = this.pageCount;
-            
-            if (this.pageRendering) {
-                this.pageNumPending = this.pageNum;
-            } else {
+            nextPage() {
+                if (this.pageNum >= this.pageCount) return;
+                this.pageNum++;
                 this.renderPage(this.pageNum);
+            },
+
+            goToPage(num) {
+                if (num < 1) num = 1;
+                if (num > this.pageCount) num = this.pageCount;
+                this.pageNum = num;
+                this.renderPage(num);
+                this.sidebarOpen = false;
+                // Scroll to top of document area
+                document.getElementById('pdf-render-container').scrollTo({top: 0, behavior: 'smooth'});
+            },
+
+            changeZoom(delta) {
+                this.scale = Math.min(Math.max(this.scale + delta, 0.5), 3.0);
+            },
+
+            async syncProgress(num) {
+                const formData = new FormData();
+                formData.append('page', num);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                try {
+                    await fetch("{% url 'books:update_reading_progress' book.slug %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Accept': 'application/json' }
+                    });
+                } catch (e) { console.warn("Sync deferred."); }
             }
-        },
-
-        prevPage() {
-            if (this.pageNum <= 1) return;
-            this.pageNum--;
-            this.queueRenderPage(this.pageNum);
-        },
-
-        nextPage() {
-            if (this.pageNum >= this.pageCount) return;
-            this.pageNum++;
-            this.queueRenderPage(this.pageNum);
-        },
-
-        goToPage(num) {
-            this.pageNum = num;
-            this.queueRenderPage(num);
-            this.sidebarOpen = false;
-        },
-
-        changeZoom(delta) {
-            this.scale = Math.min(Math.max(this.scale + delta, 0.5), 2.5);
-        },
-
-        async syncProgress(num) {
-            const formData = new FormData();
-            formData.append('page', num);
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-            try {
-                await fetch("{% url 'books:update_reading_progress' book.slug %}", {
-                    method: 'POST',
-                    body: formData
-                });
-            } catch (e) { console.warn("Sync failed"); }
-        }
+        }));
     });
 </script>
 {% endblock %}

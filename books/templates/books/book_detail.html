@@ -3,7 +3,12 @@
 
 {% block title %}{{ book.title }} - Estim Library{% endblock %}
 
+{% block og_title %}{{ book.title }} | Estim Library{% endblock %}
+
 {% block extra_css %}
+<meta name="description" content="Lire {{ book.title }} par {{ book.author.name }}. Découvrez cet ouvrage d'exception sur Estim Library.">
+<meta property="og:image" content="{% if book.cover_image %}{{ book.cover_image.url }}{% else %}{% static 'icons/og-image.jpg' %}{% endif %}">
+<meta property="og:type" content="book">
 <style>
     .pattern-bg {
         background-image: radial-gradient(rgba(117, 91, 0, 0.05) 1px, transparent 0);
@@ -141,29 +146,22 @@
     </div>
 
     <!-- Intelligent Inter-Campus Alert -->
-    {% if user.is_authenticated and user.campus %}
-        {# Check if student's campus is NOT in book's campuses AND book is NOT in 'all' campuses #}
-        {% if book.target_campuses.exists %}
-            {% if user.campus.code != 'all' %}
-                {% if not user.campus in book.target_campuses.all %}
-                    <div class="mb-12 p-6 rounded-[2rem] {% if book.pdf_file %}bg-primary/10 border-primary/20 text-primary{% else %}bg-secondary/10 border-secondary/20 text-secondary{% endif %} border flex gap-5 items-start animate-in slide-in-from-top-4 duration-700">
-                        <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-                            <span class="material-symbols-outlined">{% if book.pdf_file %}picture_as_pdf{% else %}local_shipping{% endif %}</span>
-                        </div>
-                        <div>
-                            <h4 class="font-extrabold text-label-md uppercase tracking-wider mb-1">Information de transfert</h4>
-                            <p class="text-body-md opacity-80 leading-snug">
-                                {% if book.pdf_file %}
-                                    Cet ouvrage n'est pas présent à <strong>{{ user.campus.name }}</strong>, mais vous pouvez le lire immédiatement en <strong>version PDF</strong>.
-                                {% else %}
-                                    Cet ouvrage est localisé sur d'autres sites. Sa réservation depuis <strong>{{ user.campus.name }}</strong> pourra nécessiter un délai de transfert.
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endif %}
-        {% endif %}
+    {% if user.is_authenticated and user.campus and not is_local %}
+        <div class="mb-12 p-6 rounded-[2rem] {% if book.pdf_file %}bg-primary/10 border-primary/20 text-primary{% else %}bg-secondary/10 border-secondary/20 text-secondary{% endif %} border flex gap-5 items-start animate-in slide-in-from-top-4 duration-700">
+            <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                <span class="material-symbols-outlined">{% if book.pdf_file %}picture_as_pdf{% else %}local_shipping{% endif %}</span>
+            </div>
+            <div>
+                <h4 class="font-extrabold text-label-md uppercase tracking-wider mb-1">Information de transfert</h4>
+                <p class="text-body-md opacity-80 leading-snug">
+                    {% if book.pdf_file %}
+                        Cet ouvrage n'est pas présent à <strong>{{ user.campus.name }}</strong>, mais vous pouvez le lire immédiatement en <strong>version PDF</strong>.
+                    {% else %}
+                        Cet ouvrage est localisé sur d'autres sites. Sa réservation depuis <strong>{{ user.campus.name }}</strong> pourra nécessiter un délai de transfert.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
     {% endif %}
 
     <div class="african-geometric-border w-full mb-12"></div>

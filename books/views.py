@@ -26,26 +26,31 @@ def book_list(request):
     latest_books = Book.objects.filter(is_available=True).order_by('-created_at')[:6]
     
     # Smart Recommendations based on user profile (Academic + Location)
+    recommendations = Book.objects.none()
     if request.user.is_authenticated and request.user.role == 'student':
-        # Recommended if in student's department AND student's campus (or 'all' campus)
         user_campus_code = request.user.campus.code if request.user.campus else 'all'
-        recommendations = Book.objects.filter(
-            is_available=True,
-            target_department=request.user.department,
-            target_campuses__code__in=[user_campus_code, 'all']
-        ).distinct().exclude(cover_image='').order_by('?')[:3]
+        user_dept = request.user.department
         
-        # Fallback 1: Same Department, any Campus
-        if not recommendations.exists():
+        # 1. Perfect Match: Same Department AND (Same Campus OR All Campuses)
+        if user_dept:
             recommendations = Book.objects.filter(
                 is_available=True,
-                target_department=request.user.department
+                target_department=user_dept,
+                target_campuses__code__in=[user_campus_code, 'all']
             ).distinct().exclude(cover_image='').order_by('?')[:3]
             
-        # Fallback 2: General
+            # 2. Fallback: Same Department, any Campus
+            if not recommendations.exists():
+                recommendations = Book.objects.filter(
+                    is_available=True,
+                    target_department=user_dept
+                ).distinct().exclude(cover_image='').order_by('?')[:3]
+        
+        # 3. Last Fallback: Any available book (if no dept or no matches)
         if not recommendations.exists():
             recommendations = Book.objects.filter(is_available=True).distinct().exclude(cover_image='').order_by('?')[:3]
     else:
+        # For non-authenticated or staff: General recommendations
         recommendations = Book.objects.filter(is_available=True).distinct().exclude(cover_image='').order_by('?')[:3]
     
     reading_progress = []
@@ -74,12 +79,19 @@ def book_detail(request, slug):
     
     form = ReviewForm(instance=user_review)
     
+    # Check if book is local to user's campus
+    is_local = True
+    if request.user.is_authenticated and request.user.campus:
+        if book.target_campuses.exists():
+            is_local = book.is_available_at(request.user.campus)
+    
     context = {
         'book': book, 
         'is_favorite': is_favorite,
         'reviews': reviews,
         'user_review': user_review,
-        'form': form
+        'form': form,
+        'is_local': is_local,
     }
     return render(request, 'books/book_detail.html', context)
 
@@ -400,8 +412,12 @@ def update_reading_progress(request, slug):
             progress, _ = ReadingProgress.objects.get_or_create(user=request.user, book=book)
             progress.last_page = page
             progress.save()
+            
+            if request.headers.get('HX-Request') or request.headers.get('Accept') == 'application/json':
+                return JsonResponse({'status': 'success', 'page': page})
+                
             return redirect('books:read_book', slug=slug)
-    return redirect('books:book_list')
+    return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 def toggle_favorite(request, slug):

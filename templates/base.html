@@ -4,6 +4,32 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>{% block title %}Estim Library{% endblock %}</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Estim Library - Votre bibliothèque numérique d'exception. Découvrez des ouvrages rares, gérez vos lectures et partagez votre passion pour le savoir.">
+    <meta name="keywords" content="bibliothèque, livre numérique, lecture, culture, éducation, Estim Library">
+    <meta name="author" content="Estim Library">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{% block og_title %}Estim Library - Excellence Numérique{% endblock %}">
+    <meta property="og:description" content="Accédez à une collection unique d'ouvrages numériques avec une expérience de lecture premium.">
+    <meta property="og:image" content="{% static 'icons/og-image.jpg' %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Estim Library">
+    <meta property="twitter:description" content="L'excellence de la lecture numérique à portée de main.">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#755b00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EstimLib">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-152x152.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -327,5 +353,15 @@
     </nav>
     
     {% block extra_js %}{% endblock %}
+    
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/static/sw.js')
+            .then(reg => console.log('Service Worker registered', reg))
+            .catch(err => console.log('Service Worker registration failed', err));
+        });
+      }
+    </script>
 </body>
 </html>

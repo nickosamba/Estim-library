@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /accounts/profile/
+Disallow: /reservations/librarian/
+
+Sitemap: https://estim-library.com/sitemap.xml

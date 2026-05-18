@@ -67,6 +67,16 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
+    def is_available_at(self, campus):
+        """Checks if the book is physically available at a given campus object."""
+        if not campus:
+            return False
+        return self.target_campuses.filter(models.Q(id=campus.id) | models.Q(code='all')).exists()
+
+    def is_available_globally(self):
+        """Checks if the book is available for all campuses."""
+        return self.target_campuses.filter(code='all').exists()
+
     def save(self, *args, **kwargs):
         if not self.slug:
             from django.utils.text import slugify
