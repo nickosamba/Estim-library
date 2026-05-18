@@ -3,6 +3,42 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+# Global storage for the data transition
+campus_mapping_cache = {}
+
+def backup_campus_data(apps, schema_editor):
+    User = apps.get_model('accounts', 'User')
+    for user in User.objects.all():
+        if user.campus:
+            campus_mapping_cache[user.id] = str(user.campus).lower()
+            # Clear the value to avoid IntegrityError during AlterField
+            user.campus = None
+            user.save()
+
+def restore_campus_data(apps, schema_editor):
+    User = apps.get_model('accounts', 'User')
+    Campus = apps.get_model('books', 'Campus')
+    
+    # Map old string values to campus codes
+    code_mapping = {
+        'brazzaville': 'BZV',
+        'pointe_noire': 'PNR',
+        'pointe-noire': 'PNR',
+        'ouesso': 'OUE'
+    }
+    
+    # Pre-fetch campuses to avoid multiple queries
+    campuses_by_code = {c.code: c for c in Campus.objects.all()}
+    
+    for user_id, old_val in campus_mapping_cache.items():
+        try:
+            user = User.objects.get(id=user_id)
+            code = code_mapping.get(old_val)
+            if code and code in campuses_by_code:
+                user.campus = campuses_by_code[code]
+                user.save()
+        except User.DoesNotExist:
+            continue
 
 class Migration(migrations.Migration):
 
@@ -12,9 +48,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(backup_campus_data, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name='user',
             name='campus',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='books.campus'),
         ),
+        migrations.RunPython(restore_campus_data, reverse_code=migrations.RunPython.noop),
     ]
