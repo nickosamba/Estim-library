@@ -5,10 +5,12 @@ from .models import User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ('Informations Supplémentaires', {'fields': ('role', 'phone_number', 'bio', 'profile_picture')}),
+        ('Informations Académiques', {'fields': ('role', 'campus', 'department', 'filiere', 'level')}),
+        ('Informations Supplémentaires', {'fields': ('phone_number', 'bio', 'profile_picture')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Informations Supplémentaires', {'fields': ('role', 'phone_number', 'bio', 'profile_picture')}),
+        ('Informations Académiques', {'fields': ('role', 'campus', 'department', 'filiere', 'level')}),
+        ('Informations Supplémentaires', {'fields': ('phone_number', 'bio', 'profile_picture')}),
     )
-    list_display = ('username', 'email', 'role', 'is_staff')
-    list_filter = ('role', 'is_staff', 'is_superuser')
+    list_display = ('username', 'email', 'role', 'campus', 'is_staff')
+    list_filter = ('role', 'campus', 'is_staff', 'is_superuser')
