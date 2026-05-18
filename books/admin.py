@@ -1,5 +1,10 @@
 from django.contrib import admin
-from .models import Category, Author, Book, Review
+from .models import Category, Author, Book, Review, Campus
+
+@admin.register(Campus)
+class CampusAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code')
+    search_fields = ('name', 'code')
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
