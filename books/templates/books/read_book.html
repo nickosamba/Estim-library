@@ -5,272 +5,264 @@
 
 {% block extra_css %}
 <style>
-    /* Content Protection */
-    .no-select {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
+    .no-select { -webkit-user-select: none; user-select: none; }
+    .pdf-canvas-container { 
+        box-shadow: 0 10px 50px rgba(0,0,0,0.1);
+        margin: 20px auto;
+        background: white;
+        transition: transform 0.2s ease;
     }
-    
-    /* Dark Mode Filter for PDF */
-    .pdf-dark-mode {
+    .dark .pdf-canvas-container { 
         filter: invert(90%) hue-rotate(180deg) contrast(90%);
+        box-shadow: 0 10px 50px rgba(0,0,0,0.4);
     }
-
-    /* Custom Scrollbar for Sidebar */
-    .sidebar-scroll::-webkit-scrollbar {
-        width: 4px;
+    .reader-bg { background: #f8f9fa; transition: background 0.3s ease; }
+    .dark .reader-bg { background: #121412; }
+    
+    #pdf-render-container {
+        overflow-y: auto;
+        height: 100%;
+        scroll-behavior: smooth;
     }
-    .sidebar-scroll::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .sidebar-scroll::-webkit-scrollbar-thumb {
-        background: rgba(var(--primary-rgb), 0.1);
-        border-radius: 10px;
-    }
-
-    .zen-transition {
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    .loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255,255,255,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="fixed inset-0 z-[60] bg-background flex flex-col no-select overflow-hidden" 
-     oncontextmenu="return false" 
-     x-data="{ 
-        darkMode: false, 
-        sidebarOpen: false, 
-        activeTab: 'chapters',
-        zenMode: false,
-        lastInteraction: Date.now(),
-        init() {
-            setInterval(() => {
-                if (Date.now() - this.lastInteraction > 5000 && !this.sidebarOpen) {
-                    this.zenMode = true;
-                }
-            }, 1000);
-        }
-     }" 
-     @mousemove="zenMode = false; lastInteraction = Date.now()">
+<div class="fixed inset-0 z-[60] flex flex-col no-select overflow-hidden reader-bg" 
+     x-data="pdfReader()" 
+     x-init="initReader('{{ book.pdf_file.url }}', {{ progress.last_page }})"
+     :class="darkMode ? 'dark' : ''">
 
-    <!-- Reader Header -->
-    <div class="px-margin-mobile py-3 flex items-center justify-between glass-effect border-b border-outline-variant/30 shadow-sm relative z-20 zen-transition"
+    <!-- Header -->
+    <div class="px-margin-mobile py-3 flex items-center justify-between glass-effect border-b border-outline-variant/30 shadow-sm relative z-20 transition-all duration-500"
          :class="zenMode ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'">
         
         <div class="flex items-center gap-4">
-            <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-surface-variant/20 rounded-xl transition-all" title="Menu de navigation">
+            <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-primary/10 rounded-xl transition-all">
                 <span class="material-symbols-outlined" x-text="sidebarOpen ? 'menu_open' : 'menu'"></span>
             </button>
-            <a href="{% url 'books:book_detail' book.slug %}" 
-               @click.prevent="window.history.length > 1 ? window.history.back() : window.location.href='{% url 'books:book_detail' book.slug %}'"
-               class="p-2 hover:bg-surface-variant/20 rounded-full transition-all" 
-               title="Fermer la liseuse">
+            <a href="{% url 'books:book_detail' book.slug %}" class="p-2 hover:bg-error/10 text-error rounded-full transition-all">
                 <span class="material-symbols-outlined">close</span>
             </a>
-            <div class="hidden sm:block">
-                <h2 class="font-extrabold text-on-background text-label-md line-clamp-1 max-w-[200px] md:max-w-md">{{ book.title }}</h2>
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px] font-extrabold text-primary uppercase tracking-widest">{{ book.author.name }}</span>
-                    <div class="w-1 h-1 rounded-full bg-outline-variant"></div>
-                    <span class="text-[9px] font-bold text-outline uppercase tracking-wider">Page actuelle : {{ progress.last_page }}</span>
-                </div>
+            <div class="hidden md:block">
+                <h2 class="font-extrabold text-on-background text-label-md">{{ book.title }}</h2>
+                <p class="text-[9px] font-bold text-outline uppercase tracking-widest">{{ book.author.name }}</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-2 md:gap-4">
-            <!-- Progress Tracker -->
-            <form action="{% url 'books:update_reading_progress' book.slug %}" method="POST" class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/20">
-                {% csrf_token %}
-                <span class="text-[10px] font-bold text-outline uppercase hidden md:inline">Page</span>
-                <input type="number" name="page" value="{{ progress.last_page }}" min="1" class="w-12 bg-transparent border-none p-0 text-center text-label-md font-bold focus:ring-0">
-                <button type="submit" class="material-symbols-outlined text-primary text-sm hover:scale-110 transition-transform">bookmark</button>
-            </form>
+        <!-- Controls -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center bg-surface-container-low rounded-xl border border-outline-variant/20 px-2">
+                <button @click="prevPage()" :disabled="pageNum <= 1" class="p-2 disabled:opacity-30">
+                    <span class="material-symbols-outlined text-sm">chevron_left</span>
+                </button>
+                <div class="flex items-center gap-1 px-2 border-x border-outline-variant/10">
+                    <input type="number" x-model.number="pageNum" @change="queueRenderPage(pageNum)" class="w-10 bg-transparent border-none p-0 text-center font-black text-xs focus:ring-0">
+                    <span class="text-[10px] text-outline">/ <span x-text="pageCount"></span></span>
+                </div>
+                <button @click="nextPage()" :disabled="pageNum >= pageCount" class="p-2 disabled:opacity-30">
+                    <span class="material-symbols-outlined text-sm">chevron_right</span>
+                </button>
+            </div>
 
-            <div class="h-8 w-px bg-outline-variant/30 mx-1"></div>
+            <div class="h-6 w-px bg-outline-variant/20 mx-1"></div>
 
-            <!-- Display Controls -->
-            <button @click="darkMode = !darkMode" class="p-2.5 rounded-xl transition-all" :class="darkMode ? 'bg-primary text-white shadow-lg' : 'bg-surface-container-low text-outline hover:bg-surface-container-high'">
-                <span class="material-symbols-outlined text-[20px]" x-text="darkMode ? 'light_mode' : 'dark_mode'"></span>
+            <div class="flex items-center bg-surface-container-low rounded-xl border border-outline-variant/20 px-1">
+                <button @click="changeZoom(-0.1)" class="p-2 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">zoom_out</span></button>
+                <span class="text-[9px] font-black w-10 text-center" x-text="Math.round(scale * 100) + '%'"></span>
+                <button @click="changeZoom(0.1)" class="p-2 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">zoom_in</span></button>
+            </div>
+
+            <button @click="darkMode = !darkMode" class="p-2.5 rounded-xl transition-all" :class="darkMode ? 'bg-primary text-white' : 'bg-surface-container-low text-outline'">
+                <span class="material-symbols-outlined text-[18px]" x-text="darkMode ? 'light_mode' : 'dark_mode'"></span>
             </button>
-
-            <a href="{{ book.pdf_file.url }}" download class="p-2.5 bg-surface-container-low text-outline rounded-xl hover:bg-primary hover:text-white transition-all">
-                <span class="material-symbols-outlined text-[20px]">download</span>
-            </a>
         </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="flex-grow flex relative overflow-hidden bg-surface-variant/10 transition-colors duration-500" :class="darkMode ? 'bg-[#1a1c1a]' : ''">
-        
-        <!-- Sidebar Navigation -->
-        <div class="absolute inset-y-0 left-0 w-80 bg-white border-r border-outline-variant/30 z-30 transition-transform duration-500 ease-in-out shadow-2xl flex flex-col"
+    <!-- Main Content -->
+    <div class="flex-grow flex relative">
+        <!-- Sidebar -->
+        <div class="absolute inset-y-0 left-0 w-80 bg-white dark:bg-[#1a1c1a] border-r border-outline-variant/30 z-30 transition-transform duration-500 shadow-2xl flex flex-col"
              :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
-            
-            <!-- Sidebar Header Tabs -->
-            <div class="p-4 border-b border-outline-variant/20 grid grid-cols-3 gap-1">
-                <button @click="activeTab = 'chapters'" :class="activeTab == 'chapters' ? 'bg-primary/10 text-primary' : 'text-outline'" class="py-2 rounded-lg transition-all flex flex-col items-center">
-                    <span class="material-symbols-outlined text-lg">format_list_bulleted</span>
-                    <span class="text-[8px] font-black uppercase tracking-tighter mt-1">Sommaire</span>
-                </button>
-                <button @click="activeTab = 'bookmarks'" :class="activeTab == 'bookmarks' ? 'bg-primary/10 text-primary' : 'text-outline'" class="py-2 rounded-lg transition-all flex flex-col items-center">
-                    <span class="material-symbols-outlined text-lg">bookmarks</span>
-                    <span class="text-[8px] font-black uppercase tracking-tighter mt-1">Marques</span>
-                </button>
-                <button @click="activeTab = 'notes'" :class="activeTab == 'notes' ? 'bg-primary/10 text-primary' : 'text-outline'" class="py-2 rounded-lg transition-all flex flex-col items-center">
-                    <span class="material-symbols-outlined text-lg">edit_note</span>
-                    <span class="text-[8px] font-black uppercase tracking-tighter mt-1">Notes</span>
-                </button>
+            <div class="p-4 border-b border-outline-variant/20 flex gap-2">
+                <button @click="activeTab = 'sommaire'" :class="activeTab == 'sommaire' ? 'bg-primary text-white' : 'text-outline'" class="flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter">Sommaire</button>
+                <button @click="activeTab = 'notes'" :class="activeTab == 'notes' ? 'bg-primary text-white' : 'text-outline'" class="flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-tighter">Notes</button>
             </div>
-
-            <!-- Sidebar Content -->
-            <div class="flex-grow overflow-y-auto sidebar-scroll p-4">
-                
-                <!-- Chapters Tab -->
-                <div x-show="activeTab == 'chapters'" x-transition>
-                    <h3 class="text-[10px] font-black text-outline uppercase tracking-widest mb-4">Plan de l'ouvrage</h3>
-                    <div class="space-y-2">
-                        {% for chapter in chapters %}
-                            <form action="{% url 'books:update_reading_progress' book.slug %}" method="POST">
-                                {% csrf_token %}
-                                <input type="hidden" name="page" value="{{ chapter.page_number }}">
-                                <button type="submit" class="w-full text-left p-3 rounded-xl hover:bg-surface-container-low transition-all group flex items-center justify-between">
-                                    <span class="text-sm font-bold text-on-surface group-hover:text-primary">{{ chapter.title }}</span>
-                                    <span class="text-[10px] font-black text-outline/50">p.{{ chapter.page_number }}</span>
-                                </button>
-                            </form>
-                        {% empty %}
-                            <p class="text-[10px] text-outline italic p-4 text-center">Aucun sommaire disponible pour cet ouvrage.</p>
-                        {% endfor %}
-                    </div>
+            <div class="flex-grow overflow-y-auto p-4">
+                <div x-show="activeTab == 'sommaire'" class="space-y-2">
+                    {% for chapter in chapters %}
+                        <button @click="goToPage({{ chapter.page_number }})" class="w-full text-left p-3 rounded-xl hover:bg-primary/5 transition-all group flex justify-between items-center">
+                            <span class="text-xs font-bold text-on-surface group-hover:text-primary">{{ chapter.title }}</span>
+                            <span class="text-[9px] font-black text-outline/40">p.{{ chapter.page_number }}</span>
+                        </button>
+                    {% endfor %}
                 </div>
-
-                <!-- Bookmarks Tab -->
-                <div x-show="activeTab == 'bookmarks'" x-transition>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-[10px] font-black text-outline uppercase tracking-widest">Vos pages favorites</h3>
-                        <button @click="$refs.bookmarkModal.showModal()" class="text-primary text-[10px] font-black uppercase tracking-widest hover:underline">+ Ajouter</button>
-                    </div>
-                    <div class="space-y-3">
-                        {% for bookmark in bookmarks %}
-                            <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 relative group">
-                                <form action="{% url 'books:update_reading_progress' book.slug %}" method="POST" class="inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="page" value="{{ bookmark.page_number }}">
-                                    <button type="submit" class="text-left w-full">
-                                        <p class="text-[10px] font-black text-primary uppercase mb-1">Page {{ bookmark.page_number }}</p>
-                                        <p class="text-xs font-bold text-on-surface">{{ bookmark.label|default:"Sans nom" }}</p>
-                                    </button>
-                                </form>
-                                <a href="{% url 'books:delete_bookmark' bookmark.id %}" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-error transition-all p-1 hover:bg-error/10 rounded">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </a>
+                <div x-show="activeTab == 'notes'" class="space-y-4">
+                    {% for annotation in annotations %}
+                        <div class="p-4 bg-secondary/5 rounded-2xl border border-secondary/10">
+                            <div class="flex justify-between mb-2">
+                                <span class="bg-secondary/10 text-secondary px-2 py-0.5 rounded text-[10px] font-black">P.{{ annotation.page_number }}</span>
+                                <button @click="goToPage({{ annotation.page_number }})" class="text-primary text-[10px] font-black uppercase">Voir</button>
                             </div>
-                        {% empty %}
-                            <p class="text-[10px] text-outline italic p-4 text-center">Enregistrez des pages pour les retrouver plus tard.</p>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- Notes Tab -->
-                <div x-show="activeTab == 'notes'" x-transition>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-[10px] font-black text-outline uppercase tracking-widest">Mes Annotations</h3>
-                        <button @click="$refs.noteModal.showModal()" class="text-primary text-[10px] font-black uppercase tracking-widest hover:underline">+ Note</button>
-                    </div>
-                    <div class="space-y-4">
-                        {% for annotation in annotations %}
-                            <div class="p-4 bg-secondary/5 rounded-2xl border border-secondary/10 relative group">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span class="w-6 h-6 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center text-[10px] font-black">{{ annotation.page_number }}</span>
-                                    <span class="text-[9px] text-outline font-bold uppercase">{{ annotation.created_at|date:"d M Y" }}</span>
-                                </div>
-                                <p class="text-xs text-on-surface leading-relaxed">{{ annotation.content }}</p>
-                                <a href="{% url 'books:delete_annotation' annotation.id %}" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-error transition-all p-1 hover:bg-error/10 rounded">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </a>
-                            </div>
-                        {% empty %}
-                            <p class="text-[10px] text-outline italic p-4 text-center">Prenez des notes pendant votre lecture.</p>
-                        {% endfor %}
-                    </div>
+                            <p class="text-xs text-on-surface">{{ annotation.content }}</p>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- PDF Viewer Wrapper -->
-        <div class="flex-grow h-full relative z-10">
-            {% if book.pdf_file %}
-                <iframe 
-                    src="{{ book.pdf_file.url }}#page={{ progress.last_page }}&toolbar=0&navpanes=0" 
-                    class="w-full h-full border-none transition-all duration-500" 
-                    :class="darkMode ? 'pdf-dark-mode' : ''">
-                </iframe>
-            {% endif %}
-            
-            <!-- Floating Sidebar Toggle (Only visible when Zen + Sidebar Closed) -->
-            <button x-show="!sidebarOpen && zenMode" 
-                    @click="zenMode = false; sidebarOpen = true"
-                    x-transition
-                    class="absolute top-1/2 left-0 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-r-2xl border border-outline-variant/30 text-primary shadow-xl z-50">
-                <span class="material-symbols-outlined">chevron_right</span>
-            </button>
+        <!-- PDF Render Area -->
+        <div id="pdf-render-container" class="flex-grow relative pt-4 pb-20" @click="zenMode = !zenMode">
+            <div x-show="isLoading" class="loading-overlay">
+                <div class="flex flex-col items-center gap-4">
+                    <span class="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
+                    <p class="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Chargement du manuscrit...</p>
+                </div>
+            </div>
+            <div class="pdf-canvas-container" :style="`transform: scale(${scale}); transform-origin: top center;`" id="canvas-wrapper">
+                <canvas id="pdf-canvas"></canvas>
+            </div>
         </div>
+
+        <!-- Floating Note Button -->
+        <button @click="$refs.noteModal.showModal()" class="fixed bottom-8 right-8 w-14 h-14 bg-secondary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-40">
+            <span class="material-symbols-outlined">edit_note</span>
+        </button>
     </div>
 
     <!-- Modals -->
-    <dialog x-ref="bookmarkModal" class="rounded-[2rem] p-8 border-none shadow-2xl bg-white max-w-sm w-full backdrop:bg-black/50">
-        <h3 class="text-2xl font-extrabold tracking-tight mb-4">Ajouter un <span class="text-primary">Marque-page</span></h3>
-        <form action="{% url 'books:add_bookmark' book.slug %}" method="POST">
-            {% csrf_token %}
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-widest text-outline mb-2 block">Numéro de page</label>
-                    <input type="number" name="page" value="{{ progress.last_page }}" class="w-full p-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-primary font-bold">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-widest text-outline mb-2 block">Titre (optionnel)</label>
-                    <input type="text" name="label" placeholder="Ex: Début du chapitre 2" class="w-full p-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-primary font-bold">
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" @click="$refs.bookmarkModal.close()" class="flex-grow py-4 rounded-2xl font-bold text-outline hover:bg-surface-container-low transition-all">Annuler</button>
-                    <button type="submit" class="flex-grow py-4 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">Enregistrer</button>
-                </div>
-            </div>
-        </form>
-    </dialog>
-
     <dialog x-ref="noteModal" class="rounded-[2rem] p-8 border-none shadow-2xl bg-white max-w-md w-full backdrop:bg-black/50">
         <h3 class="text-2xl font-extrabold tracking-tight mb-4">Nouvelle <span class="text-secondary">Annotation</span></h3>
         <form action="{% url 'books:add_annotation' book.slug %}" method="POST">
             {% csrf_token %}
+            <input type="hidden" name="page" :value="pageNum">
             <div class="space-y-4">
-                <div class="flex items-center gap-4">
-                    <div class="w-1/3">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-outline mb-2 block">Page</label>
-                        <input type="number" name="page" value="{{ progress.last_page }}" class="w-full p-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary font-bold text-secondary">
-                    </div>
-                    <div class="flex-grow">
-                        <p class="text-[10px] text-outline/60 mt-6 italic">La note sera liée à cette page.</p>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase tracking-widest text-outline mb-2 block">Votre note</label>
-                    <textarea name="content" rows="5" placeholder="Saisissez vos réflexions ou un résumé..." class="w-full p-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary font-medium text-on-surface"></textarea>
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" @click="$refs.noteModal.close()" class="flex-grow py-4 rounded-2xl font-bold text-outline hover:bg-surface-container-low transition-all">Annuler</button>
-                    <button type="submit" class="flex-grow py-4 rounded-2xl font-bold bg-secondary text-white shadow-lg shadow-secondary/20 hover:scale-[1.02] transition-all">Enregistrer la note</button>
+                <p class="text-[10px] font-black text-outline uppercase tracking-widest">Page <span x-text="pageNum" class="text-secondary"></span></p>
+                <textarea name="content" rows="5" placeholder="Notez vos réflexions ici..." class="w-full p-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary font-medium"></textarea>
+                <div class="flex gap-3">
+                    <button type="button" @click="$refs.noteModal.close()" class="flex-grow py-4 rounded-2xl font-bold text-outline">Annuler</button>
+                    <button type="submit" class="flex-grow py-4 rounded-2xl font-bold bg-secondary text-white shadow-lg">Enregistrer</button>
                 </div>
             </div>
         </form>
     </dialog>
-
-    <!-- Mobile Footer Info -->
-    <div class="sm:hidden px-margin-mobile py-2 bg-white border-t border-outline-variant/10 text-center zen-transition"
-         :class="zenMode ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100'">
-        <p class="text-[9px] font-bold text-outline uppercase tracking-widest">{{ book.title }} — Page {{ progress.last_page }}</p>
-    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module">
+    import * as pdfjsLib from "{% static 'vendor/pdfjs/pdf.mjs' %}";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'vendor/pdfjs/pdf.worker.mjs' %}";
+
+    window.pdfReader = () => ({
+        pdfDoc: null,
+        pageNum: 1,
+        pageRendering: false,
+        pageNumPending: null,
+        scale: 1.0,
+        pageCount: 0,
+        isLoading: true,
+        darkMode: false,
+        sidebarOpen: false,
+        zenMode: false,
+        activeTab: 'sommaire',
+        ctx: null,
+        canvas: null,
+
+        async initReader(url, startPage) {
+            this.canvas = document.getElementById('pdf-canvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.pageNum = startPage || 1;
+
+            try {
+                this.pdfDoc = await pdfjsLib.getDocument(url).promise;
+                this.pageCount = this.pdfDoc.numPages;
+                this.renderPage(this.pageNum);
+                this.isLoading = false;
+            } catch (error) {
+                console.error("Error loading PDF:", error);
+                alert("Erreur lors du chargement du PDF.");
+            }
+        },
+
+        async renderPage(num) {
+            this.pageRendering = true;
+            const page = await this.pdfDoc.getPage(num);
+            
+            const viewport = page.getViewport({ scale: 2.0 }); // Render at 2x for sharpness
+            this.canvas.height = viewport.height;
+            this.canvas.width = viewport.width;
+
+            const renderContext = {
+                canvasContext: this.ctx,
+                viewport: viewport
+            };
+
+            await page.render(renderContext).promise;
+            this.pageRendering = false;
+
+            if (this.pageNumPending !== null) {
+                this.renderPage(this.pageNumPending);
+                this.pageNumPending = null;
+            }
+
+            // Sync with backend
+            this.syncProgress(num);
+        },
+
+        queueRenderPage(num) {
+            if (num < 1) this.pageNum = 1;
+            if (num > this.pageCount) this.pageNum = this.pageCount;
+            
+            if (this.pageRendering) {
+                this.pageNumPending = this.pageNum;
+            } else {
+                this.renderPage(this.pageNum);
+            }
+        },
+
+        prevPage() {
+            if (this.pageNum <= 1) return;
+            this.pageNum--;
+            this.queueRenderPage(this.pageNum);
+        },
+
+        nextPage() {
+            if (this.pageNum >= this.pageCount) return;
+            this.pageNum++;
+            this.queueRenderPage(this.pageNum);
+        },
+
+        goToPage(num) {
+            this.pageNum = num;
+            this.queueRenderPage(num);
+            this.sidebarOpen = false;
+        },
+
+        changeZoom(delta) {
+            this.scale = Math.min(Math.max(this.scale + delta, 0.5), 2.5);
+        },
+
+        async syncProgress(num) {
+            const formData = new FormData();
+            formData.append('page', num);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            try {
+                await fetch("{% url 'books:update_reading_progress' book.slug %}", {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (e) { console.warn("Sync failed"); }
+        }
+    });
+</script>
 {% endblock %}
