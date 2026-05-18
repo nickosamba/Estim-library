@@ -63,7 +63,7 @@
                                             {{ user.get_level_display|default:"-" }} {{ user.filiere|default:"" }}
                                         </p>
                                         <p class="text-[9px] text-primary font-bold uppercase tracking-tighter">
-                                            {{ user.get_department_display|default:"Département non défini" }} • {{ user.get_campus_display|default:"Campus inconnu" }}
+                                            {{ user.get_department_display|default:"Département non défini" }} • {{ user.campus.name|default:"Campus inconnu" }}
                                         </p>
                                     </div>
                                 </div>
