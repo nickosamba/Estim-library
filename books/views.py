@@ -28,10 +28,11 @@ def book_list(request):
     # Smart Recommendations based on user profile (Academic + Location)
     if request.user.is_authenticated and request.user.role == 'student':
         # Recommended if in student's department AND student's campus (or 'all' campus)
+        user_campus_code = request.user.campus.code if request.user.campus else 'all'
         recommendations = Book.objects.filter(
             is_available=True,
             target_department=request.user.department,
-            target_campuses__code__in=[request.user.campus, 'all']
+            target_campuses__code__in=[user_campus_code, 'all']
         ).distinct().exclude(cover_image='').order_by('?')[:3]
         
         # Fallback 1: Same Department, any Campus

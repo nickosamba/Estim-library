@@ -1,14 +1,17 @@
 from django.test import TestCase
 from django.urls import reverse
 from .models import User, Notification
+from books.models import Campus
 
 class AccountsTests(TestCase):
     def setUp(self):
+        self.campus = Campus.objects.create(name='Brazzaville', code='BZV')
         self.user = User.objects.create_user(
             username='teststudent',
             password='testpassword123',
             role='student',
-            email='student@test.com'
+            email='student@test.com',
+            campus=self.campus
         )
         self.admin = User.objects.create_superuser(
             username='testadmin',
@@ -27,10 +30,11 @@ class AccountsTests(TestCase):
             'email': 'new@test.com',
             'password1': 'newpassword123',
             'password2': 'newpassword123',
-            'role': 'student'
+            'campus': self.campus.id
         })
         self.assertEqual(response.status_code, 302) # Redirect to book_list
         self.assertTrue(User.objects.filter(username='newuser').exists())
+        self.assertEqual(User.objects.get(username='newuser').role, 'student')
 
     def test_notification_creation(self):
         notif = Notification.objects.create(

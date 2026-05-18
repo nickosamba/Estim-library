@@ -8,12 +8,6 @@ class User(AbstractUser):
         ('admin', 'Administrateur'),
     )
 
-    CAMPUS_CHOICES = (
-        ('brazzaville', 'Brazzaville'),
-        ('pointe_noire', 'Pointe-Noire'),
-        ('ouesso', 'Ouesso'),
-    )
-
     DEPARTMENT_CHOICES = (
         ('sciences', 'Sciences et Technologies'),
         ('management', 'Management et Gestion'),
@@ -30,7 +24,7 @@ class User(AbstractUser):
     )
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
-    campus = models.CharField(max_length=50, choices=CAMPUS_CHOICES, blank=True, null=True)
+    campus = models.ForeignKey('books.Campus', on_delete=models.SET_NULL, blank=True, null=True)
     department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES, blank=True, null=True)
     filiere = models.CharField(max_length=100, blank=True, null=True, help_text="Ex: Informatique, Droit, Marketing")
     level = models.CharField(max_length=10, choices=LEVEL_CHOICES, blank=True, null=True)

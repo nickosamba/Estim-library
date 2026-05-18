@@ -80,7 +80,7 @@ def member_list(request):
     return render(request, 'reservations/member_list.html', {'members': members})
 
 @login_required
-@user_passes_test(is_librarian)
+@user_passes_test(lambda u: u.role == 'admin' or u.is_superuser)
 def change_member_role(request, user_id):
     from accounts.models import User
     member = get_object_or_404(User, id=user_id)
