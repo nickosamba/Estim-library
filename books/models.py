@@ -58,7 +58,7 @@ class Book(models.Model):
     cover_image = models.ImageField(upload_to='books/covers/')
     pdf_file = models.FileField(upload_to='books/pdfs/', blank=True, null=True)
     publication_year = models.PositiveIntegerField()
-    isbn = models.CharField(max_length=13, unique=True)
+    isbn = models.CharField(max_length=13, unique=True, null=True, blank=True)
     copies_available = models.PositiveIntegerField(default=1)
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
