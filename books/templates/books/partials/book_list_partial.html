@@ -15,7 +15,7 @@
 <!-- Book List -->
 <div class="space-y-6">
     {% for book in books %}
-        <div class="bg-white rounded-[2rem] border border-outline-variant/30 flex flex-col sm:flex-row p-5 gap-8 card-shadow hover:card-shadow-hover hover:-translate-y-1 transition-all duration-500 group">
+        <div class="bg-white rounded-[2rem] border border-outline-variant/30 flex flex-col sm:flex-row p-5 gap-8 card-shadow hover:card-shadow-hover hover:-translate-y-1 transition-all duration-500 group animate-reveal-up" style="animation-delay: {{ forloop.counter|add:1 }}00ms">
             <!-- Book Cover -->
             <a href="{% url 'books:book_detail' book.slug %}" class="w-full sm:w-32 aspect-[3/4] flex-shrink-0 rounded-2xl overflow-hidden bg-surface-container shadow-md block relative">
                 {% if book.cover_image and book.cover_image.name %}
