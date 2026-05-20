@@ -32,7 +32,12 @@
                     
                     <div class="space-y-2">
                         <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Auteur</label>
-                        {{ form.author }}
+                        <div class="flex gap-2">
+                            {{ form.author }}
+                            <button type="button" id="add-author-btn" class="bg-secondary/10 text-secondary px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-secondary hover:text-white transition-all whitespace-nowrap">
+                                <span class="material-symbols-outlined text-sm">person_add</span>
+                            </button>
+                        </div>
                         {% if form.author.errors %}<p class="text-error text-[10px] font-bold mt-1 ml-1">{{ form.author.errors.0 }}</p>{% endif %}
                     </div>
                     
