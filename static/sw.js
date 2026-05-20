@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estim-library-v3'; // Increment version for updates
+const CACHE_NAME = 'estim-library-v4'; // Final polish version
 const ASSETS_TO_CACHE = [
   '/',
   '/static/vendor/pdfjs/pdf.mjs',
