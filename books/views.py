@@ -81,9 +81,8 @@ def book_detail(request, slug):
     
     # Check if book is local to user's campus
     is_local = True
-    if request.user.is_authenticated and request.user.campus:
-        if book.target_campuses.exists():
-            is_local = book.is_available_at(request.user.campus)
+    if request.user.is_authenticated:
+        is_local = book.is_available_at(request.user.campus)
     
     context = {
         'book': book, 

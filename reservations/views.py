@@ -14,8 +14,11 @@ def reserve_book(request, slug):
     book = get_object_or_404(Book, slug=slug)
     
     # Validation du Campus
-    if request.user.campus and not book.is_available_at(request.user.campus):
-        messages.error(request, f"Désolé, '{book.title}' n'est pas disponible sur votre campus ({request.user.campus.name}).")
+    if not book.is_available_at(request.user.campus):
+        if not request.user.campus:
+            messages.error(request, "Veuillez renseigner votre campus dans votre profil avant de réserver un ouvrage physique.")
+        else:
+            messages.error(request, f"Désolé, '{book.title}' n'est pas disponible sur votre campus ({request.user.campus.name}).")
         return redirect('books:book_detail', slug=slug)
 
     if book.copies_available <= 0:

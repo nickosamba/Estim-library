@@ -68,7 +68,13 @@ class Book(models.Model):
         return self.title
 
     def is_available_at(self, campus):
-        """Checks if the book is physically available at a given campus object."""
+        """
+        Checks if the book is physically available at a given campus object.
+        - If the book has no target campuses assigned, it's considered globally available.
+        - If the book has target campuses, the user must belong to one of them or one must be 'all'.
+        """
+        if not self.target_campuses.exists():
+            return True
         if not campus:
             return False
         return self.target_campuses.filter(models.Q(id=campus.id) | models.Q(code='all')).exists()
