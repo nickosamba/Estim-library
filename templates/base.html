@@ -253,7 +253,7 @@
         {% endif %}
 
         <!-- Content Area -->
-        <div class="max-w-screen-xl mx-auto pb-40">
+        <div class="max-w-screen-xl mx-auto pb-40 animate-slide-up">
             {% block content %}{% endblock %}
         </div>
     </main>
@@ -348,7 +348,7 @@
             {% endif %}
             <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'profile' %}text-primary bg-primary/10 rounded-2xl{% else %}text-outline hover:text-primary{% endif %}" href="{% url 'profile' %}">
                 <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'profile' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>person</span>
-                <span class="text-[10px] font-bold mt-1 uppercase">Member</span>
+                <span class="text-[10px] font-bold mt-1 uppercase">Profil</span>
             </a>
         </div>
     </nav>

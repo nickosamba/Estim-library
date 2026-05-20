@@ -108,7 +108,7 @@
     </section>
 
     <!-- Stats Grid -->
-    <section class="grid grid-cols-3 gap-4 mb-12">
+    <section class="grid grid-cols-3 gap-4 mb-12 animate-slide-up stagger-1">
         <div class="bg-white border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm">
             <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
             <span class="font-bold text-on-surface text-label-md">{{ book.copies_available }} Copie{{ book.copies_available|pluralize }}</span>
@@ -124,7 +124,7 @@
     </section>
 
     <!-- Status & Localization Chip -->
-    <div class="mb-8 flex flex-col items-center gap-4">
+    <div class="mb-8 flex flex-col items-center gap-4 animate-slide-up stagger-2">
         <div class="inline-flex items-center gap-3 {% if book.is_available %}bg-secondary-container text-on-secondary-container{% else %}bg-error-container text-on-error-container{% endif %} px-8 py-3 rounded-full border border-outline-variant/20 shadow-sm">
             <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">{% if book.is_available %}check_circle{% else %}error{% endif %}</span>
             <span class="font-bold text-label-md">{% if book.is_available %}Disponible en rayon{% else %}Indisponible actuellement{% endif %}</span>
@@ -275,16 +275,18 @@
 <div class="fixed bottom-24 left-0 right-0 z-[60] px-margin-mobile" hx-boost="true">
     <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4 p-4 glass-effect rounded-[2.5rem] border border-outline-variant/30 shadow-2xl">
         <div class="flex gap-4 flex-1">
-            {% if book.is_available %}
-                <a href="{% url 'reservations:reserve_book' book.slug %}" class="bg-primary hover:brightness-110 text-white font-bold uppercase py-4 px-8 rounded-2xl flex-1 transition-all active:scale-95 shadow-lg shadow-primary/30 flex items-center justify-center gap-3">
-                    <span class="material-symbols-outlined">bookmark_add</span>
-                    <span class="text-label-md">Réserver</span>
-                </a>
-            {% else %}
-                <button disabled class="bg-outline-variant text-white font-bold uppercase py-4 px-8 rounded-2xl flex-1 cursor-not-allowed opacity-50 flex items-center justify-center gap-3">
-                    <span class="material-symbols-outlined">block</span>
-                    <span class="text-label-md">Indisponible</span>
-                </button>
+            {% if not user.is_staff and user.role != 'admin' and user.role != 'teacher' %}
+                {% if book.is_available %}
+                    <a href="{% url 'reservations:reserve_book' book.slug %}" class="bg-primary hover:brightness-110 text-white font-bold uppercase py-4 px-8 rounded-2xl flex-1 transition-all active:scale-95 shadow-lg shadow-primary/30 flex items-center justify-center gap-3">
+                        <span class="material-symbols-outlined">bookmark_add</span>
+                        <span class="text-label-md">Réserver</span>
+                    </a>
+                {% else %}
+                    <button disabled class="bg-outline-variant text-white font-bold uppercase py-4 px-8 rounded-2xl flex-1 cursor-not-allowed opacity-50 flex items-center justify-center gap-3">
+                        <span class="material-symbols-outlined">block</span>
+                        <span class="text-label-md">Indisponible</span>
+                    </button>
+                {% endif %}
             {% endif %}
             
             {% if book.pdf_file %}
