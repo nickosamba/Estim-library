@@ -28,7 +28,20 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-CSRF_TRUSTED_ORIGINS = ['https://marge-unerasing-mila.ngrok-free.dev']
+# Support dynamique pour Ngrok
+import sys
+if any('ngrok' in arg for arg in sys.argv) or os.getenv('USE_NGROK', 'False') == 'True':
+    # On autorise tous les sous-domaines ngrok pour faciliter les tests
+    ALLOWED_HOSTS.append('.ngrok-free.app')
+    ALLOWED_HOSTS.append('.ngrok-free.dev')
+    # Pour CSRF, on peut aussi utiliser une liste plus large ou une variable d'env
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.ngrok-free.app',
+        'https://*.ngrok-free.dev',
+        'https://marge-unerasing-mila.ngrok-free.dev' # Gardé pour compatibilité
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS = ['https://marge-unerasing-mila.ngrok-free.dev']
 
 
 # Application definition

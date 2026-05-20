@@ -33,6 +33,13 @@ class User(AbstractUser):
     bio = models.TextField(max_length=500, blank=True)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        # Synchroniser is_staff avec le rôle
+        self.is_staff = self.role in ['admin', 'teacher']
+        # Si c'est un admin, on peut aussi lui donner is_superuser si nécessaire, 
+        # mais restons prudents et limitons à is_staff pour l'instant.
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 

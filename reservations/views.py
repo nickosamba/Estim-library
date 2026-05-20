@@ -13,6 +13,11 @@ def is_librarian(user):
 def reserve_book(request, slug):
     book = get_object_or_404(Book, slug=slug)
     
+    # Validation du Campus
+    if request.user.campus and not book.is_available_at(request.user.campus):
+        messages.error(request, f"Désolé, '{book.title}' n'est pas disponible sur votre campus ({request.user.campus.name}).")
+        return redirect('books:book_detail', slug=slug)
+
     if book.copies_available <= 0:
         messages.error(request, f"Désolé, '{book.title}' n'est plus disponible en stock.")
         return redirect('books:book_detail', slug=slug)
@@ -33,10 +38,7 @@ def reserve_book(request, slug):
         status='pending'
     )
     
-    book.copies_available -= 1
-    if book.copies_available == 0:
-        book.is_available = False
-    book.save()
+    # La gestion du stock est maintenant gérée par les signaux (reservations/signals.py)
 
     # Notification pour le staff
     from accounts.models import User, Notification
@@ -60,10 +62,7 @@ def cancel_reservation(request, reservation_id):
     if reservation.status in ['pending', 'approved']:
         reservation.status = 'cancelled'
         reservation.save()
-        book = reservation.book
-        book.copies_available += 1
-        book.is_available = True
-        book.save()
+        # Le stock est géré par les signaux
         messages.success(request, "Réservation annulée.")
     return redirect('profile')
 
@@ -88,8 +87,7 @@ def change_member_role(request, user_id):
         new_role = request.POST.get('role')
         if new_role in dict(User.ROLE_CHOICES):
             member.role = new_role
-            # Also update is_staff for admin/teacher roles
-            member.is_staff = new_role in ['admin', 'teacher']
+            # La mise à jour de is_staff est gérée par la méthode save() du modèle User
             member.save()
             messages.success(request, f"Le rôle de {member.username} a été mis à jour vers {member.get_role_display()}.")
     return redirect('reservations:member_list')
@@ -113,7 +111,7 @@ def librarian_dashboard(request):
         res_count=Count('reservations')
     ).order_by('-res_count')[:5]
 
-    # Academic Analytics (New Phase 3)
+    # Academic Analytics
     from accounts.models import User
     from django.db.models import Count
 
@@ -122,7 +120,6 @@ def librarian_dashboard(request):
         count=Count('id')
     ).order_by('-count')
     
-    # Translate dept codes for the chart/display
     dept_labels = dict(User.DEPARTMENT_CHOICES)
     formatted_dept_stats = [
         {'label': dept_labels.get(item['user__department'], 'Non défini'), 'value': item['count']}
@@ -163,16 +160,6 @@ def update_reservation_status(request, reservation_id, new_status):
     if new_status == 'borrowed' and old_status != 'borrowed':
         reservation.start_date = timezone.now().date()
         reservation.end_date = timezone.now().date() + timedelta(days=14)
-    elif new_status == 'returned' and old_status == 'borrowed':
-        book = reservation.book
-        book.copies_available += 1
-        book.is_available = True
-        book.save()
-    elif new_status == 'rejected' and old_status == 'pending':
-        book = reservation.book
-        book.copies_available += 1
-        book.is_available = True
-        book.save()
         
     reservation.status = new_status
     reservation.save()
