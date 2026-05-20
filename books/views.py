@@ -310,6 +310,7 @@ def create_author_api(request):
     if request.method == 'POST':
         name = request.POST.get('name')
         if name:
+            from .models import Author
             author, created = Author.objects.get_or_create(name=name)
             return JsonResponse({
                 'success': True, 
