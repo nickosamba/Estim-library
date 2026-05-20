@@ -225,11 +225,14 @@ def fetch_book_info(request):
                 from .models import Author, Category
                 author, _ = Author.objects.get_or_create(name=author_name)
                 
-                category_id = None
+                # Category / Subject Extraction
                 category_name_found = ""
                 categories = volume_info.get('categories', [])
                 if categories:
                     category_name_found = categories[0]
+                
+                category_id = None
+                if category_name_found:
                     matched_cat = Category.objects.filter(name__iexact=category_name_found).first()
                     if matched_cat:
                         category_id = matched_cat.id
@@ -262,11 +265,14 @@ def fetch_book_info(request):
                 author_name = authors[0].get('name') if authors else "Auteur Inconnu"
                 
                 description = book_data.get('notes', '')
+                
+                # Always try to get subjects regardless of description
                 category_name_found = ""
-                if not description and 'subjects' in book_data:
+                if 'subjects' in book_data:
                     subjects = [s.get('name') for s in book_data['subjects'][:5]]
                     category_name_found = subjects[0] if subjects else ""
-                    description = "Sujets : " + ", ".join(subjects)
+                    if not description:
+                        description = "Sujets : " + ", ".join(subjects)
                 
                 pub_date = book_data.get('publish_date', '')
                 import re
