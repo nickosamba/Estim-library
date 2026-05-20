@@ -22,4 +22,5 @@ urlpatterns = [
     path('manage/import/', views.import_books, name='import_books'),
     path('api/fetch-book-info/', views.fetch_book_info, name='fetch_book_info'),
     path('api/create-category/', views.create_category_api, name='create_category_api'),
+    path('api/create-author/', views.create_author_api, name='create_author_api'),
 ]

@@ -238,5 +238,33 @@
             btn.innerHTML = '<span class="hidden sm:inline">Récupérer</span><span class="material-symbols-outlined text-sm sm:hidden">search</span>';
         }
     });
+
+    // Handle Manual Author Creation
+    document.getElementById('add-author-btn').addEventListener('click', async function() {
+        const name = prompt("Entrez le nom du nouvel auteur :");
+        if (!name) return;
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        try {
+            const response = await fetch("{% url 'books:create_author_api' %}", {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) {
+                const authorSelect = document.querySelector('select[name="author"]');
+                const newOpt = new Option(data.name, data.id);
+                authorSelect.add(newOpt);
+                authorSelect.value = data.id;
+            } else {
+                alert("Erreur : " + data.error);
+            }
+        } catch (e) {
+            console.error("Erreur création auteur", e);
+        }
+    });
 </script>
 {% endblock %}

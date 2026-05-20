@@ -306,6 +306,21 @@ def fetch_book_info(request):
 
 @login_required
 @user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+def create_author_api(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            author, created = Author.objects.get_or_create(name=name)
+            return JsonResponse({
+                'success': True, 
+                'id': author.id, 
+                'name': author.name,
+                'created': created
+            })
+    return JsonResponse({'success': False, 'error': 'Nom d\'auteur manquant ou méthode invalide.'}, status=400)
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
 def create_category_api(request):
     if request.method == 'POST':
         name = request.POST.get('name')
