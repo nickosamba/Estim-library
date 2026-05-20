@@ -104,6 +104,40 @@
         .card-shadow-hover:hover {
             box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.1);
         }
+
+        /* Smooth Entrance Animations */
+        @keyframes revealUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px);
+                filter: blur(5px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes revealFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-reveal-up {
+            animation: revealUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .animate-reveal-fade {
+            animation: revealFade 1.2s ease-out forwards;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+
+        [x-cloak] { display: none !important; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
