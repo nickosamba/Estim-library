@@ -17,76 +17,74 @@
             <p class="text-body-lg text-outline font-medium">Consultez et gérez la communauté des lecteurs de la bibliothèque.</p>
         </div>
 
+        <!-- Filter Bar -->
+        <div class="bg-surface-container-low rounded-[2rem] p-4 mb-8 border border-outline-variant/10 flex flex-wrap items-center gap-4" id="members-filter-bar">
+            <div class="relative flex-grow min-w-[300px]">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+                <input type="text" 
+                       name="q" 
+                       value="{{ search_query|default:'' }}"
+                       placeholder="Rechercher un membre, email, filière..." 
+                       class="w-full bg-white border-outline-variant/20 rounded-xl pl-12 pr-4 py-3 text-label-md font-medium focus:ring-primary/20 focus:border-primary transition-all"
+                       hx-get="{% url 'reservations:member_list' %}"
+                       hx-trigger="keyup changed delay:500ms"
+                       hx-target="#members-container"
+                       hx-select="#members-container"
+                       hx-push-url="true"
+                       hx-include="[name='campus'], [name='department']">
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <select name="campus" 
+                        class="bg-white border-outline-variant/20 rounded-xl px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant focus:ring-primary/20"
+                        hx-get="{% url 'reservations:member_list' %}"
+                        hx-trigger="change"
+                        hx-target="#members-container"
+                        hx-select="#members-container"
+                        hx-push-url="true"
+                        hx-include="[name='q'], [name='department']">
+                    <option value="">Tous les campus</option>
+                    {% for campus in campuses %}
+                        <option value="{{ campus.id }}" {% if selected_campus == campus.id|stringformat:"i" %}selected{% endif %}>{{ campus.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="department" 
+                        class="bg-white border-outline-variant/20 rounded-xl px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant focus:ring-primary/20"
+                        hx-get="{% url 'reservations:member_list' %}"
+                        hx-trigger="change"
+                        hx-target="#members-container"
+                        hx-select="#members-container"
+                        hx-push-url="true"
+                        hx-include="[name='q'], [name='campus']">
+                    <option value="">Tous les départements</option>
+                    {% for dept_code, dept_name in departments %}
+                        <option value="{{ dept_code }}" {% if selected_department == dept_code %}selected{% endif %}>{{ dept_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
         <!-- Members Table -->
-        <div class="bg-white rounded-[3rem] border border-outline-variant/20 card-shadow overflow-hidden">
-            <div class="p-10 border-b border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-6">
-                <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Liste des Utilisateurs</h3>
+        <div class="bg-white rounded-[2.5rem] md:rounded-[3rem] border border-outline-variant/20 card-shadow overflow-hidden" id="members-container">
+            <div class="p-6 md:p-10 border-b border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-6">
+                <h3 class="text-headline-sm md:text-headline-md font-extrabold text-on-background tracking-tight">Annuaire des Lecteurs</h3>
                 <div class="px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-extrabold uppercase tracking-widest">
-                    {{ members.count }} Membres inscrits
+                    {{ page_obj.paginator.count }} Membres inscrits
                 </div>
             </div>
             
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse min-w-[600px] md:min-w-0">
                     <thead>
                         <tr class="bg-surface-container-low/50">
-                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Membre</th>
-                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Cursus</th>
-                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Rôle</th>
-                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Activité</th>
-                            <th class="px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Inscrit le</th>
+                            <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Membre</th>
+                            <th class="hidden sm:table-cell px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Cursus</th>
+                            <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Rôle</th>
+                            <th class="hidden md:table-cell px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Activité</th>
+                            <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-variant/10">
-                        {% for member in members %}
-                            <tr class="hover:bg-surface-container-low/20 transition-colors">
-                                <td class="px-10 py-6">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 rounded-xl border-2 border-outline-variant/20 overflow-hidden flex-shrink-0">
-                                            {% if member.profile_picture %}
-                                                <img src="{{ member.profile_picture.url }}" class="w-full h-full object-cover" alt="">
-                                            {% else %}
-                                                <div class="w-full h-full bg-surface-container flex items-center justify-center text-outline/30">
-                                                    <span class="material-symbols-outlined text-sm">person</span>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                        <div>
-                                            <p class="font-bold text-on-surface">{{ member.username }}</p>
-                                            <p class="text-[10px] text-outline font-medium">{{ member.email }}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-10 py-6">
-                                    <div class="space-y-1">
-                                        <p class="text-[10px] font-extrabold text-primary uppercase tracking-tighter">{{ member.get_department_display|default:"-" }}</p>
-                                        <p class="text-[11px] font-bold text-on-surface">{{ member.get_level_display|default:"" }} {{ member.filiere|default:"" }}</p>
-                                    </div>
-                                </td>
-                                <td class="px-10 py-6">
-                                    <form action="{% url 'reservations:change_member_role' member.id %}" method="POST" class="flex items-center gap-2">
-                                        {% csrf_token %}
-                                        <select name="role" onchange="this.form.submit()" class="text-[10px] font-extrabold uppercase tracking-widest bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-secondary/20 py-1.5 pl-3 pr-8 appearance-none cursor-pointer
-                                            {% if member.role == 'admin' %}text-error
-                                            {% elif member.role == 'teacher' %}text-secondary
-                                            {% else %}text-primary{% endif %}">
-                                            <option value="student" {% if member.role == 'student' %}selected{% endif %}>Étudiant</option>
-                                            <option value="teacher" {% if member.role == 'teacher' %}selected{% endif %}>Enseignant</option>
-                                            <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>Admin</option>
-                                        </select>
-                                    </form>
-                                </td>
-                                <td class="px-10 py-6">
-                                    <div class="flex items-center gap-2 text-outline font-bold text-[11px]">
-                                        <span class="material-symbols-outlined text-sm">bookmark</span>
-                                        {{ member.reservations.count }} rés.
-                                    </div>
-                                </td>
-                                <td class="px-10 py-6 text-label-md text-outline font-medium">
-                                    {{ member.date_joined|date:"d/m/Y" }}
-                                </td>
-                            </tr>
-                        {% endfor %}
+                        {% include 'reservations/partials/member_rows_partial.html' %}
                     </tbody>
                 </table>
             </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estim-library-v4'; // Final polish version
+const CACHE_NAME = 'estim-library-v5'; // Cache version incremented to reflect changes in caching strategy
 const ASSETS_TO_CACHE = [
   '/',
   '/static/vendor/pdfjs/pdf.mjs',
@@ -50,8 +50,11 @@ self.addEventListener('fetch', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(event.request).then((cachedResponse) => {
         const fetchedResponse = fetch(event.request).then((networkResponse) => {
-          // Ne mettre en cache que les succès
-          if (networkResponse.status === 200) {
+          // Ne mettre en cache que les succès et éviter les fichiers média/PDF volumineux
+          const isPdf = event.request.url.endsWith('.pdf');
+          const isMedia = event.request.url.includes('/media/');
+          
+          if (networkResponse.status === 200 && !isPdf && !isMedia) {
             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;

@@ -15,11 +15,17 @@ class ReviewForm(forms.ModelForm):
         }
 
 class BookForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Campus
+        # On exclut l'option "Tous les campus" car elle est redondante avec le bouton "Sélectionner tout"
+        self.fields['target_campuses'].queryset = Campus.objects.exclude(code='all')
+
     class Meta:
         model = Book
         fields = [
-            'title', 'author', 'category', 'target_campuses', 'target_department', 'target_level', 
-            'target_filiere', 'description', 'isbn', 'publication_year', 
+            'title', 'author', 'category', 'target_campuses', 'target_department',
+            'description', 'isbn', 'publication_year', 
             'copies_available', 'cover_image', 'pdf_file', 'is_available'
         ]
         widgets = {

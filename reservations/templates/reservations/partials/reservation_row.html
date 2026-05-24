@@ -1,0 +1,114 @@
+<tr id="reservation-row-{{ res.id }}" class="hover:bg-surface-container-low/20 transition-colors group animate-in fade-in duration-300">
+    <!-- Mobile Card View (shown only on small screens) -->
+    <td colspan="4" class="md:hidden p-4">
+        <div class="bg-surface-container-low/50 rounded-2xl p-4 border border-outline-variant/10 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
+                        {{ res.user.username|slice:":2"|upper }}
+                    </div>
+                    <div>
+                        <p class="font-bold text-on-surface text-[12px]">{{ res.user.username }}</p>
+                        <p class="text-[9px] text-outline uppercase tracking-wider">{{ res.user.get_department_display }}</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 rounded-full text-[8px] font-extrabold uppercase tracking-widest
+                    {% if res.status == 'pending' %}bg-primary-fixed text-on-primary-fixed
+                    {% elif res.status == 'approved' %}bg-success/10 text-success
+                    {% elif res.status == 'borrowed' %}
+                        {% if res.end_date < today %}bg-error/10 text-error animate-pulse{% else %}bg-secondary-container text-on-secondary-container{% endif %}
+                    {% elif res.status == 'returned' %}bg-surface-variant text-outline
+                    {% else %}bg-error/10 text-error{% endif %}">
+                    {{ res.get_status_display }}
+                </span>
+            </div>
+            
+            <p class="font-medium text-on-surface-variant text-[11px] mb-2 line-clamp-1">{{ res.book.title }}</p>
+            
+            {% if res.status == 'borrowed' %}
+                <div class="flex items-center gap-2 mb-3 p-2 bg-surface rounded-xl border border-outline-variant/5">
+                    <span class="material-symbols-outlined text-[14px] text-outline">calendar_today</span>
+                    <span class="text-[9px] {% if res.end_date < today %}text-error font-bold{% else %}text-outline{% endif %}">
+                        Retour : {{ res.end_date|date:"d M Y" }}
+                        {% if res.end_date < today %}(RETARD){% endif %}
+                    </span>
+                </div>
+            {% endif %}
+
+            {% if user.role == 'librarian' or user.is_superuser %}
+            <div class="flex gap-2">
+                {% if res.status == 'pending' %}
+                    <button hx-get="{% url 'reservations:update_reservation_status' res.id 'approved' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="flex-1 bg-success text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm">
+                        Approuver
+                    </button>
+                    <button hx-get="{% url 'reservations:update_reservation_status' res.id 'rejected' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="flex-1 bg-error text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm">
+                        Refuser
+                    </button>
+                {% elif res.status == 'approved' %}
+                    <button hx-get="{% url 'reservations:update_reservation_status' res.id 'borrowed' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="w-full bg-secondary text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm">
+                        Confirmer Retrait
+                    </button>
+                {% elif res.status == 'borrowed' %}
+                    <button hx-get="{% url 'reservations:update_reservation_status' res.id 'returned' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="w-full bg-primary text-white py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm">
+                        Confirmer Retour
+                    </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </td>
+
+    <!-- Desktop Table View (hidden on mobile) -->
+    <td class="hidden md:table-cell px-10 py-6">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
+                {{ res.user.username|slice:":2"|upper }}
+            </div>
+            <span class="font-bold text-on-surface">{{ res.user.username }}</span>
+        </div>
+    </td>
+    <td class="hidden md:table-cell px-10 py-6">
+        <div class="flex flex-col">
+            <span class="font-medium text-on-surface-variant line-clamp-1">{{ res.book.title }}</span>
+            {% if res.status == 'borrowed' %}
+                <span class="text-[10px] {% if res.end_date < today %}text-error font-bold{% else %}text-outline{% endif %}">
+                    Retour prévu : {{ res.end_date|date:"d/m/Y" }}
+                    {% if res.end_date < today %}(RETARD){% endif %}
+                </span>
+            {% endif %}
+        </div>
+    </td>
+    <td class="hidden md:table-cell px-10 py-6">
+        <span class="px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest
+            {% if res.status == 'pending' %}bg-primary-fixed text-on-primary-fixed
+            {% elif res.status == 'approved' %}bg-success/10 text-success
+            {% elif res.status == 'borrowed' %}
+                {% if res.end_date < today %}bg-error/10 text-error animate-pulse{% else %}bg-secondary-container text-on-secondary-container{% endif %}
+            {% elif res.status == 'returned' %}bg-surface-variant text-outline
+            {% else %}bg-error/10 text-error{% endif %}">
+            {{ res.get_status_display }}
+        </span>
+    </td>
+    {% if user.role == 'librarian' or user.is_superuser %}
+    <td class="hidden md:table-cell px-10 py-6 text-right">
+        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            {% if res.status == 'pending' %}
+                <button hx-get="{% url 'reservations:update_reservation_status' res.id 'approved' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="w-8 h-8 rounded-lg bg-success text-white flex items-center justify-center hover:scale-110 transition-all shadow-sm">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                </button>
+                <button hx-get="{% url 'reservations:update_reservation_status' res.id 'rejected' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="w-8 h-8 rounded-lg bg-error text-white flex items-center justify-center hover:scale-110 transition-all shadow-sm">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            {% elif res.status == 'approved' %}
+                <button hx-get="{% url 'reservations:update_reservation_status' res.id 'borrowed' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="px-4 py-1.5 rounded-lg bg-secondary text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-sm">
+                    Remettre
+                </button>
+            {% elif res.status == 'borrowed' %}
+                <button hx-get="{% url 'reservations:update_reservation_status' res.id 'returned' %}" hx-target="#reservation-row-{{ res.id }}" hx-swap="outerHTML" class="px-4 py-1.5 rounded-lg bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-sm">
+                    Retour
+                </button>
+            {% endif %}
+        </div>
+    </td>
+    {% endif %}
+</tr>

@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User
+from .models import User, Filiere
+
+@admin.register(Filiere)
+class FiliereAdmin(admin.ModelAdmin):
+    list_display = ('name', 'department')
+    list_filter = ('department',)
+    search_fields = ('name',)
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):

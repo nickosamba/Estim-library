@@ -1,22 +1,28 @@
 from django.test import TestCase
 from django.urls import reverse
-from .models import User, Notification
+from .models import User, Notification, Filiere
 from books.models import Campus
 
 class AccountsTests(TestCase):
     def setUp(self):
         self.campus = Campus.objects.create(name='Brazzaville', code='BZV')
+        self.filiere = Filiere.objects.create(name='Management', department='management')
         self.user = User.objects.create_user(
             username='teststudent',
             password='testpassword123',
             role='student',
             email='student@test.com',
-            campus=self.campus
+            campus=self.campus,
+            filiere=self.filiere,
+            level='L1'
         )
         self.admin = User.objects.create_superuser(
             username='testadmin',
             password='adminpassword123',
-            email='admin@test.com'
+            email='admin@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='DOC'
         )
 
     def test_login_view(self):
@@ -30,7 +36,9 @@ class AccountsTests(TestCase):
             'email': 'new@test.com',
             'password1': 'newpassword123',
             'password2': 'newpassword123',
-            'campus': self.campus.id
+            'campus': self.campus.id,
+            'filiere': self.filiere.id,
+            'level': 'L1'
         })
         self.assertEqual(response.status_code, 302) # Redirect to book_list
         self.assertTrue(User.objects.filter(username='newuser').exists())

@@ -1,0 +1,142 @@
+{% if not infinite_scroll %}
+<div id="books-table-container" class="bg-white rounded-[2rem] md:rounded-[3rem] border border-outline-variant/20 card-shadow overflow-hidden animate-in fade-in duration-500">
+    <div class="p-6 md:p-10 border-b border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="flex items-center gap-4">
+            <h3 class="text-headline-sm md:text-headline-md font-extrabold text-on-background tracking-tight">Catalogue Complet</h3>
+            <div class="px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-extrabold uppercase tracking-widest">
+                {{ page_obj.paginator.count }} Résultats
+            </div>
+        </div>
+        
+        <!-- Bulk Actions Menu -->
+        <div id="bulk-actions-menu" class="hidden flex items-center gap-3 animate-in slide-in-from-right duration-300">
+            <span class="text-[10px] font-bold text-outline uppercase tracking-widest mr-2"><span id="selected-count">0</span> Sélectionnés</span>
+            <select name="action" form="bulk-action-form" class="bg-surface-container-low border-outline-variant/30 rounded-xl text-[10px] font-bold uppercase tracking-widest px-4 py-2 focus:ring-primary/20">
+                <option value="">Action groupée...</option>
+                <option value="online">Mettre en ligne</option>
+                <option value="offline">Mettre hors ligne</option>
+                <option value="delete">Supprimer</option>
+            </select>
+            <button type="submit" form="bulk-action-form" class="bg-primary text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:brightness-110 transition-all">
+                Appliquer
+            </button>
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <form id="bulk-action-form" method="POST" action="{% url 'books:bulk_action_books' %}">
+            {% csrf_token %}
+            <table class="w-full text-left border-collapse min-w-[800px] md:min-w-0">
+                <thead>
+                    <tr class="bg-surface-container-low/50">
+                        <th class="px-6 py-5 text-center w-12">
+                            <input type="checkbox" id="select-all" class="rounded border-outline-variant/30 text-primary focus:ring-primary/20 cursor-pointer" onchange="toggleAllCheckboxes(this)">
+                        </th>
+                        <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Livre</th>
+                        <th class="hidden md:table-cell px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Auteur</th>
+                        <th class="hidden lg:table-cell px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Catégorie</th>
+                        <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest text-center">Stock</th>
+                        <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest">Statut</th>
+                        <th class="px-6 md:px-10 py-5 text-[10px] font-extrabold text-outline uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/10" id="management-rows">
+{% endif %}
+
+                    {% for book in books %}
+                        <tr class="hover:bg-surface-container-low/20 transition-colors group"
+                            {% if forloop.last and page_obj.has_next %}
+                            hx-get="{% url 'books:manage_books' %}?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"
+                            hx-trigger="revealed"
+                            hx-swap="afterend"
+                            hx-target="this"
+                            {% endif %}>
+                            <td class="px-6 py-6 text-center">
+                                <input type="checkbox" name="book_ids" value="{{ book.id }}" class="book-checkbox rounded border-outline-variant/30 text-primary focus:ring-primary/20 cursor-pointer" onchange="updateBulkMenu()">
+                            </td>
+                            <td class="px-6 md:px-10 py-6">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-14 md:w-12 md:h-16 rounded-xl border border-outline-variant/20 overflow-hidden flex-shrink-0 bg-surface-container-low relative">
+                                        {% if book.cover_image %}
+                                            <img src="{{ book.cover_image.url }}" class="w-full h-full object-cover" alt="">
+                                        {% else %}
+                                            <div class="w-full h-full flex items-center justify-center text-outline/30">
+                                                <span class="material-symbols-outlined text-sm">book</span>
+                                            </div>
+                                        {% endif %}
+                                        {% if book.id in popular_ids %}
+                                            <div class="absolute top-1 right-1 w-4 h-4 md:w-5 md:h-5 bg-primary rounded-full flex items-center justify-center shadow-lg border border-white/20" title="Populaire">
+                                                <span class="material-symbols-outlined text-[8px] md:text-[10px] text-white">local_fire_department</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-on-surface line-clamp-1 flex items-center gap-2 text-sm md:text-base">
+                                            {{ book.title }}
+                                            {% if book.is_featured %}
+                                                <span class="material-symbols-outlined text-secondary text-sm" title="Coup de cœur">stars</span>
+                                            {% endif %}
+                                            {% if book.pdf_file %}
+                                                <span class="material-symbols-outlined text-primary text-sm" title="Édition Numérique">picture_as_pdf</span>
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-[10px] text-outline font-medium">ISBN: {{ book.isbn }}</p>
+                                        <div class="md:hidden mt-1 text-[10px] text-outline font-bold uppercase">{{ book.author.name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="hidden md:table-cell px-10 py-6 text-label-md text-on-surface-variant font-medium">
+                                {{ book.author.name }}
+                            </td>
+                            <td class="hidden lg:table-cell px-10 py-6 text-label-md text-on-surface-variant">
+                                <span class="px-3 py-1 rounded-full bg-surface-container text-outline text-[9px] font-bold uppercase">{{ book.category.name }}</span>
+                            </td>
+                            <td class="px-6 md:px-10 py-6 text-center">
+                                <span class="font-bold text-sm md:text-base {% if book.copies_available < 2 and not book.pdf_file %}text-error animate-pulse{% else %}text-on-surface{% endif %}">
+                                    {{ book.copies_available }}
+                                </span>
+                            </td>
+                            <td class="px-6 md:px-10 py-6">
+                                <div class="flex flex-col gap-1">
+                                    {% if book.is_available %}
+                                        <span class="text-secondary flex items-center gap-1 font-bold text-[9px] md:text-[10px] uppercase">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                            En ligne
+                                        </span>
+                                    {% else %}
+                                        <span class="text-error flex items-center gap-1 font-bold text-[9px] md:text-[10px] uppercase">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                            Hors ligne
+                                        </span>
+                                    {% endif %}
+                                    {% if book.pdf_file %}
+                                        <span class="text-primary text-[8px] font-black uppercase tracking-tighter">Edition PDF</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 md:px-10 py-6 text-right">
+                                <div class="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <a href="{% url 'books:edit_book' book.slug %}" class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+                                        <span class="material-symbols-outlined text-sm">edit</span>
+                                    </a>
+                                    <a href="{% url 'books:book_detail' book.slug %}" target="_blank" class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-secondary/5 text-secondary flex items-center justify-center hover:bg-secondary hover:text-white transition-all">
+                                        <span class="material-symbols-outlined text-sm">visibility</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        {% if not infinite_scroll %}
+                        <tr>
+                            <td colspan="7" class="px-10 py-20 text-center text-outline italic">Aucun ouvrage ne correspond à vos critères.</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+
+{% if not infinite_scroll %}
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>
+{% endif %}

@@ -1,29 +1,42 @@
 from django.test import TestCase
 from django.urls import reverse
-from accounts.models import User
+from accounts.models import User, Filiere
 from books.models import Campus
 from accounts.forms import CustomUserCreationForm
 
 class SecurityTests(TestCase):
     def setUp(self):
-        # Create a campus for dynamic tests
+        # Create a campus and filiere for dynamic tests
         self.campus = Campus.objects.create(name='Brazzaville', code='BZV')
+        self.filiere = Filiere.objects.create(name='Informatique', department='sciences')
         
         self.admin = User.objects.create_user(
             username='adminuser',
             password='adminpassword123',
+            email='admin@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='DOC',
             role='admin',
             is_staff=True
         )
         self.teacher = User.objects.create_user(
             username='teacheruser',
             password='teacherpassword123',
+            email='teacher@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='M2',
             role='teacher',
             is_staff=True
         )
         self.student = User.objects.create_user(
             username='studentuser',
             password='studentpassword123',
+            email='student@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='L1',
             role='student'
         )
 
@@ -40,7 +53,9 @@ class SecurityTests(TestCase):
             'password1': 'hackerpassword123',
             'password2': 'hackerpassword123',
             'role': 'admin',  # Attempting to inject role
-            'campus': self.campus.id
+            'campus': self.campus.id,
+            'filiere': self.filiere.id,
+            'level': 'L1'
         })
         self.assertEqual(response.status_code, 302)
         new_user = User.objects.get(username='hacker')

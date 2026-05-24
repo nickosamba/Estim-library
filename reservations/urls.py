@@ -11,4 +11,5 @@ urlpatterns = [
     path('members/', views.member_list, name='member_list'),
     path('members/change-role/<int:user_id>/', views.change_member_role, name='change_member_role'),
     path('update-status/<int:reservation_id>/<str:new_status>/', views.update_reservation_status, name='update_reservation_status'),
+    path('api/stats/', views.get_staff_stats, name='get_staff_stats'),
 ]

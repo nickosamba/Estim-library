@@ -6,38 +6,60 @@
 {% block content %}
 <!-- Hero Section -->
 <div class="px-margin-mobile pt-8">
-    <section class="relative min-h-[500px] flex items-center rounded-[3rem] overflow-hidden bg-inverse-surface card-shadow-hover transition-all duration-700">
-        <!-- Background Image with Overlay -->
+    <section class="relative min-h-[550px] flex items-center rounded-[3.5rem] overflow-hidden bg-[#1a1c1a] shadow-2xl group/hero transition-all duration-700">
+        <!-- Dynamic Background Image -->
         <div class="absolute inset-0">
-            <img class="w-full h-full object-cover opacity-50" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdf3_rwZP8eV5up_8wJBU4oyCOPvfQwBytSIf2-UF4jNg-krScLo8BQh6L408Rze4-ehvW6VADgClfbuTFQZe_LpICgJqgsqD4JSPNNla7g7wtt3aSE0hA32AdkU5StHrNrGFXVasMvAxd9Zjs2_uiuSgc0wrpGfn6ZJ7p7LA2KPI7ZDbTHJeF1lZg1KxTavX_KshGNXUfRWHcZhHM8wmx6AGKFcxtARwT92ECsnZ8sgqJI8QfJOdMNrjGFPyIjvsjVwK1KYC7eg" alt="Hero"/>
-            <div class="absolute inset-0 bg-gradient-to-r from-inverse-surface via-inverse-surface/60 to-transparent"></div>
+            <img class="w-full h-full object-cover opacity-40 group-hover/hero:scale-105 transition-transform duration-[2000ms] ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdf3_rwZP8eV5up_8wJBU4oyCOPvfQwBytSIf2-UF4jNg-krScLo8BQh6L408Rze4-ehvW6VADgClfbuTFQZe_LpICgJqgsqD4JSPNNla7g7wtt3aSE0hA32AdkU5StHrNrGFXVasMvAxd9Zjs2_uiuSgc0wrpGfn6ZJ7p7LA2KPI7ZDbTHJeF1lZg1KxTavX_KshGNXUfRWHcZhHM8wmx6AGKFcxtARwT92ECsnZ8sgqJI8QfJOdMNrjGFPyIjvsjVwK1KYC7eg" alt="Hero"/>
+            <div class="absolute inset-0 bg-gradient-to-r from-[#1a1c1a] via-[#1a1c1a]/70 to-transparent"></div>
+            <!-- African Pattern Texture -->
+            <div class="absolute inset-0 african-pattern-overlay opacity-10"></div>
         </div>
         
         <!-- Content -->
-        <div class="relative z-10 p-8 md:p-16 max-w-3xl">
-            <div class="flex items-center gap-3 mb-6">
-                <span class="h-[1px] w-8 bg-primary"></span>
-                <span class="text-primary-container font-bold tracking-[0.3em] text-[10px] uppercase">L'Excellence du Savoir</span>
+        <div class="relative z-10 p-6 md:p-20 max-w-4xl">
+            <div class="inline-flex items-center gap-3 mb-6 md:mb-8 bg-primary/20 backdrop-blur-md px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-primary/30 animate-reveal-fade">
+                <span class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary animate-pulse"></span>
+                <span class="text-primary-container font-black tracking-[0.2em] text-[8px] md:text-[9px] uppercase">L'Excellence du Savoir</span>
             </div>
-            <h2 class="text-headline-xl font-extrabold text-white mb-8 leading-[1.1] tracking-tighter md:text-[64px]">
-                Explorez le <span class="text-primary-container">Patrimoine</span> de l'Esprit.
+            <h2 class="text-[36px] md:text-[72px] font-extrabold text-white mb-6 md:mb-8 leading-[1.1] md:leading-[1] tracking-tighter animate-reveal-up">
+                Explorez le <span class="text-primary-container italic">Patrimoine</span> <br class="hidden md:block"> de l'Esprit.
             </h2>
-            <p class="text-body-lg text-surface-variant/90 mb-10 max-w-xl leading-relaxed font-medium">
-                Une collection unique de manuscrits anciens et d'ouvrages modernes pour éclairer votre parcours académique et culturel.
+            <p class="text-body-md md:text-body-lg text-surface-variant/80 mb-8 md:mb-12 max-w-xl leading-relaxed font-medium animate-reveal-up stagger-1">
+                Une collection unique de manuscrits anciens et d'ouvrages modernes pour éclairer votre parcours académique et culturel au sein de l'Estim.
             </p>
-            <div class="flex flex-wrap gap-4">
-                <a href="{% url 'books:catalog' %}" class="bg-primary text-white font-bold px-10 py-5 rounded-2xl flex items-center gap-3 shadow-2xl shadow-primary/40 hover:-translate-y-1 transition-all active:scale-95">
-                    Le Catalogue
-                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            <div class="flex flex-wrap gap-4 md:gap-5 animate-reveal-up stagger-2">
+                <a href="{% url 'books:catalog' %}" class="group/btn bg-primary text-white font-bold px-8 md:px-12 py-4 md:py-5 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-1 transition-all active:scale-95 text-label-md md:text-headline-md">
+                    Découvrir le Catalogue
+                    <span class="material-symbols-outlined text-sm group-hover/btn:translate-x-2 transition-transform">arrow_forward</span>
                 </a>
             </div>
         </div>
+        
+        <!-- Decoration -->
+        <div class="absolute bottom-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none"></div>
     </section>
 </div>
 
 <!-- Stats Bar -->
-<div class="px-margin-mobile -mt-10 relative z-20 mb-20">
-    <!-- ... stats bar content ... -->
+<div class="px-margin-mobile -mt-10 md:-mt-12 relative z-20 mb-16 md:mb-24">
+    <div class="max-w-5xl mx-auto bg-white/90 backdrop-blur-xl rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl border border-outline-variant/30 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        <div class="text-center group/stat">
+            <p class="text-headline-md md:text-headline-lg font-black text-primary group-hover/stat:scale-110 transition-transform duration-500">{{ total_books|default:"250" }}</p>
+            <p class="text-[9px] md:text-[10px] font-black text-outline uppercase tracking-widest mt-1">Ouvrages</p>
+        </div>
+        <div class="text-center md:border-l border-outline-variant/20 group/stat">
+            <p class="text-headline-md md:text-headline-lg font-black text-secondary group-hover/stat:scale-110 transition-transform duration-500">{{ total_members|default:"120" }}</p>
+            <p class="text-[9px] md:text-[10px] font-black text-outline uppercase tracking-widest mt-1">Membres</p>
+        </div>
+        <div class="text-center border-t md:border-t-0 md:border-l border-outline-variant/20 pt-6 md:pt-0 group/stat">
+            <p class="text-headline-md md:text-headline-lg font-black text-on-surface group-hover/stat:scale-110 transition-transform duration-500">99%</p>
+            <p class="text-[9px] md:text-[10px] font-black text-outline uppercase tracking-widest mt-1">Satisfaction</p>
+        </div>
+        <div class="text-center border-t md:border-t-0 md:border-l border-outline-variant/20 pt-6 md:pt-0 group/stat">
+            <p class="text-headline-md md:text-headline-lg font-black text-primary group-hover/stat:scale-110 transition-transform duration-500">24/7</p>
+            <p class="text-[9px] md:text-[10px] font-black text-outline uppercase tracking-widest mt-1">Accès</p>
+        </div>
+    </div>
 </div>
 
 {% if reading_progress %}
@@ -113,7 +135,7 @@
                 </div>
                 <h3 class="text-headline-xl font-extrabold text-on-background mb-8 leading-tight tracking-tighter">Plongez dans les archives impériales.</h3>
                 <p class="text-body-lg text-outline mb-12 leading-relaxed font-medium">
-                    Découvrez des manuscrits rares numérisés en haute définition, accessibles exclusivement à nos membres passionnés.
+                    Découvrez des manuscrits rares numérisés en haute définition, accessibles exclusivement à nos membres passionnés de savoir.
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {% for book in recommendations|slice:":2" %}
@@ -138,19 +160,27 @@
             
             <div class="md:w-1/2 flex justify-center">
                 <div class="relative group">
-                    {% if recommendations.0 %}
-                    <div class="relative z-20 w-[300px] md:w-[380px] aspect-[2/3] rounded-[3rem] overflow-hidden shadow-2xl group-hover:-rotate-3 transition-all duration-700">
-                        {% if recommendations.0.cover_image and recommendations.0.cover_image.name %}
-                            <img src="{{ recommendations.0.cover_image.url }}" class="w-full h-full object-cover" alt="{{ recommendations.0.title }}">
+                    {% if treasure_of_the_month %}
+                    <div class="relative z-20 w-[300px] md:w-[380px] aspect-[2/3] rounded-[3rem] overflow-hidden shadow-2xl group-hover:-rotate-3 transition-all duration-700 border-4 border-white/50">
+                        {% if treasure_of_the_month.cover_image and treasure_of_the_month.cover_image.name %}
+                            <img src="{{ treasure_of_the_month.cover_image.url }}" class="w-full h-full object-cover" alt="{{ treasure_of_the_month.title }}">
                         {% endif %}
+                        
+                        <!-- Premium Badge -->
+                        <div class="absolute top-6 right-6 bg-primary-container text-on-primary-container w-16 h-16 rounded-full flex flex-col items-center justify-center shadow-xl border-4 border-white rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                            <span class="material-symbols-outlined text-xl">verified</span>
+                            <span class="text-[8px] font-black uppercase">Estim</span>
+                        </div>
+
                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-10">
-                            <h4 class="text-white font-extrabold text-headline-md mb-4">{{ recommendations.0.title }}</h4>
-                            <a href="{% url 'books:book_detail' recommendations.0.slug %}" class="bg-white text-on-background px-8 py-3 rounded-2xl font-bold text-label-md text-center">Consulter l'ouvrage</a>
+                            <h4 class="text-white font-extrabold text-headline-md mb-2">{{ treasure_of_the_month.title }}</h4>
+                            <p class="text-primary-container font-bold text-[10px] uppercase tracking-widest mb-6">{{ treasure_of_the_month.author.name }}</p>
+                            <a href="{% url 'books:book_detail' treasure_of_the_month.slug %}" class="bg-white text-on-background px-8 py-3 rounded-2xl font-bold text-label-md text-center hover:bg-primary-container hover:text-white transition-colors">Consulter l'ouvrage</a>
                         </div>
                     </div>
                     {% endif %}
                     <!-- Decor -->
-                    <div class="absolute -bottom-8 -right-8 z-10 w-full h-full bg-secondary/10 rounded-[3rem] rotate-6 group-hover:rotate-12 transition-transform duration-700"></div>
+                    <div class="absolute -bottom-8 -right-8 z-10 w-full h-full bg-primary/10 rounded-[3rem] rotate-6 group-hover:rotate-12 transition-transform duration-700"></div>
                 </div>
             </div>
         </div>

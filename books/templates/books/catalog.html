@@ -20,10 +20,16 @@
 {% endblock %}
 
 {% block content %}
-<div class="pt-8 px-margin-mobile max-w-4xl mx-auto african-pattern">
+<div class="pt-8 px-margin-mobile max-w-4xl mx-auto african-pattern" id="catalog-container">
     <!-- Search Bar -->
     <div class="mb-8 relative">
-        <div class="flex items-center bg-white rounded-full border border-outline/30 px-6 py-4 shadow-sm focus-within:ring-2 focus-within:ring-primary-container focus-within:border-primary transition-all">
+        <form hx-get="{% url 'books:catalog' %}" 
+              hx-target="#catalog-container" 
+              hx-select="#catalog-container"
+              hx-trigger="submit, keyup changed delay:500ms from:input[name='q']"
+              hx-indicator="#catalog-spinner"
+              hx-indicator="#catalog-spinner" hx-push-url="true"
+              class="flex items-center bg-white rounded-full border border-outline/30 px-6 py-4 shadow-sm focus-within:ring-2 focus-within:ring-primary-container focus-within:border-primary transition-all">
             <span class="material-symbols-outlined text-outline mr-3">search</span>
             <input 
                 name="q" 
@@ -31,15 +37,33 @@
                 class="bg-transparent border-none focus:ring-0 w-full text-body-md font-body-md placeholder:text-outline-variant" 
                 placeholder="Rechercher un livre, un auteur..." 
                 type="text"
-                hx-get="{% url 'books:catalog' %}"
-                hx-trigger="keyup changed delay:500ms"
-                hx-target="#book-list-container"
-                hx-push-url="true"
-                hx-include="[name='category']"
             />
-            <button class="material-symbols-outlined text-primary ml-2 hover:scale-110 transition-transform">filter_list</button>
-        </div>
+
+            <!-- Hidden inputs to maintain state across HTMX calls -->
+            <input type="hidden" name="category" value="{{ selected_category|default:'' }}">
+            <input type="hidden" name="campus" value="{{ selected_campus|default:'' }}">
+            <input type="hidden" name="department" value="{{ selected_department|default:'' }}">
+            <input type="hidden" name="level" value="{{ selected_level|default:'' }}">
+        </form>
     </div>
+
+
+    <!-- Active Filter Tags -->
+    {% if active_filters %}
+    <div class="flex flex-wrap gap-2 mb-6">
+        {% for filter in active_filters %}
+            <div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-[10px] font-bold border border-primary/20">
+                {{ filter.label }}
+                <button hx-get="{% url 'books:catalog' %}?{% if search_query and filter.type != 'q' %}q={{ search_query }}&{% endif %}{% if selected_category and filter.type != 'category' %}category={{ selected_category }}&{% endif %}{% if selected_campus and filter.type != 'campus' %}campus={{ selected_campus }}&{% endif %}{% if selected_department and filter.type != 'department' %}department={{ selected_department }}&{% endif %}{% if selected_level and filter.type != 'level' %}level={{ selected_level }}{% endif %}"
+                        hx-target="#catalog-container"
+                        hx-select="#catalog-container"
+                        hx-indicator="#catalog-spinner" hx-push-url="true"
+                        class="material-symbols-outlined text-[14px] hover:text-error transition-colors">close</button>
+            </div>
+        {% endfor %}
+        <a href="{% url 'books:catalog' %}" class="text-[10px] font-bold text-outline hover:text-primary transition-colors py-1.5 px-2">Réinitialiser tout</a>
+    </div>
+    {% endif %}
 
     <!-- Academic Filters -->
     <div class="space-y-4 mb-10" x-data="{ showFilters: false }">
@@ -56,15 +80,17 @@
             <div>
                 <p class="text-[9px] font-bold text-outline uppercase mb-3 ml-2">Campus / Sites</p>
                 <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    <a href="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_department %}department={{ selected_department }}&{% endif %}{% if selected_level %}level={{ selected_level }}{% endif %}" 
-                       class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_campus %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                    <button hx-get="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_department %}department={{ selected_department }}&{% endif %}"
+                            hx-target="#catalog-container" hx-select="#catalog-container" hx-indicator="#catalog-spinner" hx-push-url="true"
+                            class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_campus %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
                         Tous les sites
-                    </a>
+                    </button>
                     {% for campus in campuses %}
-                        <a href="{% url 'books:catalog' %}?campus={{ campus.code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}" 
-                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_campus == campus.code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                        <button hx-get="{% url 'books:catalog' %}?campus={{ campus.code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}"
+                                hx-target="#catalog-container" hx-select="#catalog-container" hx-indicator="#catalog-spinner" hx-push-url="true"
+                                class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_campus == campus.code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
                             {{ campus.name }}
-                        </a>
+                        </button>
                     {% endfor %}
                 </div>
             </div>
@@ -73,32 +99,17 @@
             <div>
                 <p class="text-[9px] font-bold text-outline uppercase mb-3 ml-2">Facultés / Départements</p>
                 <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    <a href="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_level %}level={{ selected_level }}&{% endif %}{% if selected_campus %}campus={{ selected_campus }}{% endif %}" 
-                       class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_department %}bg-secondary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                    <button hx-get="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_campus %}campus={{ selected_campus }}{% endif %}"
+                            hx-target="#catalog-container" hx-select="#catalog-container" hx-indicator="#catalog-spinner" hx-push-url="true"
+                            class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_department %}bg-secondary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
                         Toutes
-                    </a>
+                    </button>
                     {% for dept_code, dept_name in departments %}
-                        <a href="{% url 'books:catalog' %}?department={{ dept_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}{% if selected_campus %}&campus={{ selected_campus }}{% endif %}" 
-                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_department == dept_code %}bg-secondary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
+                        <button hx-get="{% url 'books:catalog' %}?department={{ dept_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_campus %}&campus={{ selected_campus }}{% endif %}"
+                                hx-target="#catalog-container" hx-select="#catalog-container" hx-indicator="#catalog-spinner" hx-push-url="true"
+                                class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_department == dept_code %}bg-secondary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
                             {{ dept_name }}
-                        </a>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Levels -->
-            <div>
-                <p class="text-[9px] font-bold text-outline uppercase mb-3 ml-2">Niveaux d'études</p>
-                <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    <a href="{% url 'books:catalog' %}?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_department %}department={{ selected_department }}{% endif %}" 
-                       class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if not selected_level %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
-                        Tous
-                    </a>
-                    {% for lvl_code, lvl_name in levels %}
-                        <a href="{% url 'books:catalog' %}?level={{ lvl_code }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}" 
-                           class="whitespace-nowrap px-4 py-2 rounded-xl font-bold text-[11px] transition-all {% if selected_level == lvl_code %}bg-primary text-white shadow-md{% else %}bg-surface-container text-outline hover:bg-surface-container-high{% endif %}">
-                            {{ lvl_name }}
-                        </a>
+                        </button>
                     {% endfor %}
                 </div>
             </div>
@@ -107,21 +118,26 @@
 
     <!-- Categories -->
     <div class="flex gap-3 overflow-x-auto pb-4 mb-8 no-scrollbar scroll-smooth border-b border-outline-variant/10">
-        <input type="hidden" name="category" value="{{ selected_category|default:'' }}">
-        <a href="{% url 'books:catalog' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
-           class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if not selected_category %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">
+        <button hx-get="{% url 'books:catalog' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+                hx-target="#catalog-container" hx-select="#catalog-container" hx-indicator="#catalog-spinner" hx-push-url="true"
+                class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if not selected_category %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">
             Tout
-        </a>
+        </button>
         {% for category in categories %}
-            <a href="{% url 'books:catalog' %}?category={{ category.id }}{% if search_query %}&q={{ search_query }}{% endif %}" 
-               class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if selected_category == category.id|stringformat:'i' %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">
+            <button hx-get="{% url 'books:catalog' %}?category={{ category.id }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                    hx-target="#catalog-container" hx-select="#catalog-container" hx-indicator="#catalog-spinner" hx-push-url="true"
+                    class="whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-label-md transition-all {% if selected_category == category.id|stringformat:'i' %}bg-primary text-white shadow-lg shadow-primary/20{% else %}bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest{% endif %}">
                 {{ category.name }}
-            </a>
+            </button>
         {% endfor %}
     </div>
 
     <!-- Results Container -->
-    <div id="book-list-container">
+    <div id="book-list-container" class="relative">
+        <!-- HTMX Loader Indicator -->
+        <div id="catalog-spinner" class="htmx-indicator absolute inset-0 bg-white/50 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-3xl pointer-events-none">
+            <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
         {% include 'books/partials/book_list_partial.html' %}
     </div>
 </div>

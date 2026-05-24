@@ -81,48 +81,66 @@
                     <h3 class="text-label-sm font-extrabold text-primary uppercase tracking-widest mb-4">Ciblage & Accessibilité</h3>
                     
                     <div class="space-y-4">
-                        <label class="text-[11px] font-bold text-outline uppercase tracking-wider block">Campus cibles (Disponibilité physique)</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block">Campus cibles (Disponibilité physique)</label>
+                            <button type="button" onclick="selectAllCampuses()" class="text-[9px] font-black text-primary uppercase tracking-[0.2em] hover:underline">Sélectionner tout</button>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {% for checkbox in form.target_campuses %}
-                                <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-outline-variant/10 hover:border-primary/30 transition-all cursor-pointer">
-                                    {{ checkbox.tag }}
-                                    <span class="text-body-sm font-bold text-on-surface-variant">{{ checkbox.choice_label }}</span>
-                                </div>
+                                <label class="flex items-center gap-3 p-3 rounded-2xl bg-white border border-outline-variant/10 hover:border-primary/30 transition-all cursor-pointer group">
+                                    <div class="relative flex items-center justify-center">
+                                        {{ checkbox.tag }}
+                                    </div>
+                                    <span class="text-[11px] font-bold text-on-surface-variant group-hover:text-primary transition-colors">{{ checkbox.choice_label }}</span>
+                                </label>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
                         <div class="space-y-2">
-                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block ml-1">Département</label>
+                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block ml-1">Département cible (Recommandations)</label>
                             {{ form.target_department }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block ml-1">Niveau</label>
-                            {{ form.target_level }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[11px] font-bold text-outline uppercase tracking-wider block ml-1">Filière spécifique</label>
-                            {{ form.target_filiere }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Files Section -->
-                <div class="p-8 rounded-[2.5rem] bg-surface-container-low/30 border border-outline-variant/10 space-y-6">
+                <div class="p-8 rounded-[2.5rem] bg-surface-container-low/30 border border-outline-variant/10 space-y-8">
                     <h3 class="text-label-sm font-extrabold text-secondary uppercase tracking-widest mb-4">Fichiers & Médias</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Cover Image Dropzone -->
                         <div class="space-y-3">
                             <label class="text-[11px] font-bold text-outline uppercase tracking-wider block">Image de couverture</label>
-                            <div class="relative group">
-                                {{ form.cover_image }}
+                            <div id="cover-dropzone" class="relative group h-48 border-2 border-dashed border-outline-variant/30 rounded-[2rem] bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-primary/50">
+                                <div id="cover-preview-container" class="absolute inset-0 hidden">
+                                    <img id="cover-preview" class="w-full h-full object-cover">
+                                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span class="text-white text-[10px] font-black uppercase tracking-widest">Changer l'image</span>
+                                    </div>
+                                </div>
+                                <div id="cover-placeholder" class="flex flex-col items-center text-center p-4">
+                                    <span class="material-symbols-outlined text-outline text-3xl mb-2 group-hover:scale-110 transition-transform">add_photo_alternate</span>
+                                    <p class="text-[9px] font-bold text-outline uppercase tracking-widest">Glisser ou cliquer</p>
+                                </div>
+                                <input type="file" name="cover_image" id="id_cover_image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewImage(this)">
                             </div>
                         </div>
+
+                        <!-- PDF Dropzone -->
                         <div class="space-y-3">
                             <label class="text-[11px] font-bold text-outline uppercase tracking-wider block">Fichier PDF (Liseuse)</label>
-                            <div class="relative group">
-                                {{ form.pdf_file }}
+                            <div id="pdf-dropzone" class="relative group h-48 border-2 border-dashed border-outline-variant/30 rounded-[2rem] bg-white flex flex-col items-center justify-center overflow-hidden transition-all hover:border-secondary/50">
+                                <div id="pdf-preview-container" class="absolute inset-0 hidden bg-secondary/5 flex flex-col items-center justify-center">
+                                    <span class="material-symbols-outlined text-secondary text-4xl mb-2">picture_as_pdf</span>
+                                    <p id="pdf-filename" class="text-[10px] font-bold text-secondary px-4 text-center line-clamp-2"></p>
+                                </div>
+                                <div id="pdf-placeholder" class="flex flex-col items-center text-center p-4">
+                                    <span class="material-symbols-outlined text-outline text-3xl mb-2 group-hover:scale-110 transition-transform">upload_file</span>
+                                    <p class="text-[9px] font-bold text-outline uppercase tracking-widest">Fichier PDF</p>
+                                </div>
+                                <input type="file" name="pdf_file" id="id_pdf_file" accept=".pdf" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewPDF(this)">
                             </div>
                         </div>
                     </div>
@@ -270,6 +288,61 @@
         } catch (e) {
             console.error("Erreur création auteur", e);
         }
+    });
+
+    // Campus Select All
+    function selectAllCampuses() {
+        const checkboxes = document.querySelectorAll('input[name="target_campuses"]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+    }
+
+    // Image Preview Logic
+    function previewImage(input) {
+        const preview = document.getElementById('cover-preview');
+        const container = document.getElementById('cover-preview-container');
+        const placeholder = document.getElementById('cover-placeholder');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                container.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // PDF Preview Logic
+    function previewPDF(input) {
+        const container = document.getElementById('pdf-preview-container');
+        const placeholder = document.getElementById('pdf-placeholder');
+        const filename = document.getElementById('pdf-filename');
+        
+        if (input.files && input.files[0]) {
+            filename.textContent = input.files[0].name;
+            container.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+        }
+    }
+
+    // Drag & Drop Visual Effects
+    ['cover-dropzone', 'pdf-dropzone'].forEach(id => {
+        const zone = document.getElementById(id);
+        
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.classList.add('border-primary', 'bg-primary/5');
+        });
+
+        zone.addEventListener('dragleave', () => {
+            zone.classList.remove('border-primary', 'bg-primary/5');
+        });
+
+        zone.addEventListener('drop', () => {
+            zone.classList.remove('border-primary', 'bg-primary/5');
+        });
     });
 </script>
 {% endblock %}

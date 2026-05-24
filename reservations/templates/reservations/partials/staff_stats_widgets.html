@@ -1,0 +1,30 @@
+<div id="staff-stats-widgets" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 animate-in fade-in duration-500">
+    <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-outline-variant/20">
+        <p class="text-[10px] font-extrabold text-outline uppercase tracking-widest mb-2 opacity-60">Total Livres</p>
+        <div class="flex items-end gap-2">
+            <span class="text-[32px] font-extrabold text-on-background leading-none">{{ total_books }}</span>
+            <span class="text-primary material-symbols-outlined mb-1">inventory_2</span>
+        </div>
+    </div>
+    <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-outline-variant/20">
+        <p class="text-[10px] font-extrabold text-primary uppercase tracking-widest mb-2 opacity-60">En attente</p>
+        <div class="flex items-end gap-2">
+            <span class="text-[32px] font-extrabold text-primary leading-none">{{ pending_count }}</span>
+            <span class="text-primary material-symbols-outlined mb-1">hourglass_empty</span>
+        </div>
+    </div>
+    <div class="bg-white p-8 rounded-[2.5rem] card-shadow border border-outline-variant/20">
+        <p class="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 opacity-60">En circulation</p>
+        <div class="flex items-end gap-2">
+            <span class="text-[32px] font-extrabold text-secondary leading-none">{{ borrowed_count }}</span>
+            <span class="text-secondary material-symbols-outlined mb-1">auto_stories</span>
+        </div>
+    </div>
+    <div class="{% if late_count > 0 %}bg-error text-white{% else %}bg-success text-white{% endif %} p-8 rounded-[2.5rem] shadow-xl overflow-hidden relative group">
+        <div class="relative z-10">
+            <p class="text-[10px] font-extrabold uppercase tracking-widest mb-2 opacity-80">Retards</p>
+            <span class="text-[32px] font-extrabold leading-none">{{ late_count }}</span>
+        </div>
+        <div class="absolute -bottom-6 -right-6 w-24 h-24 african-pattern-overlay opacity-20 rotate-12 group-hover:rotate-0 transition-transform duration-700"></div>
+    </div>
+</div>

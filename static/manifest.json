@@ -31,5 +31,21 @@
       "sizes": "180x180",
       "type": "image/png"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Catalogue",
+      "short_name": "Catalogue",
+      "description": "Explorer les livres disponibles",
+      "url": "/catalog/",
+      "icons": [{ "src": "/static/icons/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mes Réservations",
+      "short_name": "Réservations",
+      "description": "Voir mes emprunts en cours",
+      "url": "/reservations/my-reservations/",
+      "icons": [{ "src": "/static/icons/android-chrome-192x192.png", "sizes": "192x192" }]
+    }
   ]
 }

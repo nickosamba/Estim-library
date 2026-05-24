@@ -1,15 +1,33 @@
 from django.test import TestCase
 from django.urls import reverse
 from .models import Reservation
-from books.models import Book, Author
-from accounts.models import User
+from books.models import Book, Author, Campus
+from accounts.models import User, Filiere
 from django.utils import timezone
 from datetime import timedelta
 
 class ReservationsTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='student', password='pass', role='student')
-        self.staff = User.objects.create_user(username='staff', password='pass', role='admin')
+        self.campus = Campus.objects.create(name='Brazzaville', code='BZV')
+        self.filiere = Filiere.objects.create(name='Sciences', department='sciences')
+        self.user = User.objects.create_user(
+            username='student', 
+            password='pass', 
+            role='student',
+            email='student@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='L1'
+        )
+        self.staff = User.objects.create_user(
+            username='staff', 
+            password='pass', 
+            role='admin',
+            email='staff@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='DOC'
+        )
         self.author = Author.objects.create(name='Author')
         self.book = Book.objects.create(title='Book', author=self.author, copies_available=2, is_available=True, slug='book', publication_year=2024)
 

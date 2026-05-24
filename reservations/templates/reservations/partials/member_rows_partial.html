@@ -1,0 +1,89 @@
+{% for member in members %}
+    <tr class="hover:bg-surface-container-low/20 transition-colors group"
+        {% if forloop.last and page_obj.has_next %}
+        hx-get="{% url 'reservations:member_list' %}?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_campus %}&campus={{ selected_campus }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}"
+        hx-trigger="revealed"
+        hx-swap="afterend"
+        hx-target="this"
+        {% endif %}>
+        <td class="px-6 md:px-10 py-6">
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-xl border-2 border-outline-variant/20 overflow-hidden flex-shrink-0">
+                        {% if member.profile_picture %}
+                            <img src="{{ member.profile_picture.url }}" class="w-full h-full object-cover" alt="">
+                        {% else %}
+                            <div class="w-full h-full bg-surface-container flex items-center justify-center text-outline/30">
+                                <span class="material-symbols-outlined text-sm">person</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if member.has_overdue %}
+                        <div class="absolute -top-1 -right-1 w-4 h-4 bg-error rounded-full border-2 border-white flex items-center justify-center animate-pulse" title="En retard de restitution">
+                            <span class="material-symbols-outlined text-[10px] text-white">warning</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <p class="font-bold text-on-surface text-sm md:text-base">{{ member.username }}</p>
+                        {% if member.has_overdue %}
+                            <span class="text-[8px] font-black bg-error/10 text-error px-2 py-0.5 rounded-md uppercase tracking-tighter">Retard</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-[10px] text-outline font-medium hidden sm:block">{{ member.email }}</p>
+                    <div class="sm:hidden text-[9px] font-bold text-primary uppercase tracking-tighter">{{ member.get_department_display|default:"-" }}</div>
+                </div>
+            </div>
+        </td>
+        <td class="hidden sm:table-cell px-10 py-6">
+            <div class="space-y-1">
+                <p class="text-[10px] font-extrabold text-primary uppercase tracking-tighter">{{ member.get_department_display|default:"-" }}</p>
+                <p class="text-[11px] font-bold text-on-surface">{{ member.get_level_display|default:"" }} {{ member.filiere|default:"" }}</p>
+            </div>
+        </td>
+        <td class="px-6 md:px-10 py-6">
+            <form action="{% url 'reservations:change_member_role' member.id %}" method="POST" class="flex items-center gap-2">
+                {% csrf_token %}
+                <select name="role" onchange="this.form.submit()" class="text-[10px] font-extrabold uppercase tracking-widest bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-secondary/20 py-1.5 pl-3 pr-8 appearance-none cursor-pointer
+                    {% if member.role == 'admin' %}text-error
+                    {% elif member.role == 'teacher' %}text-secondary
+                    {% else %}text-primary{% endif %}">
+                    <option value="student" {% if member.role == 'student' %}selected{% endif %}>Étudiant</option>
+                    <option value="teacher" {% if member.role == 'teacher' %}selected{% endif %}>Enseignant</option>
+                    <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </form>
+        </td>
+        <td class="hidden md:table-cell px-10 py-6">
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-2 text-outline font-bold text-[11px]">
+                    <span class="material-symbols-outlined text-sm">bookmark</span>
+                    {{ member.reservations.count }} rés.
+                </div>
+                <div class="flex items-center gap-2 text-secondary font-black text-[9px] uppercase tracking-tighter">
+                    <span class="material-symbols-outlined text-xs">workspace_premium</span>
+                    Score: {{ member.culture_score|default:"0" }}
+                </div>
+            </div>
+        </td>
+        <td class="px-6 md:px-10 py-6 text-right">
+            <div class="flex justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                <a href="{% url 'profile' %}?user={{ member.username }}" target="_blank" class="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all" title="Voir l'activité">
+                    <span class="material-symbols-outlined text-sm">monitoring</span>
+                </a>
+                {% if member.has_overdue %}
+                    <a href="{% url 'reservations:librarian_dashboard' %}?q={{ member.username }}" class="w-10 h-10 rounded-xl bg-error/5 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all" title="Gérer les retards">
+                        <span class="material-symbols-outlined text-sm">history_toggle_off</span>
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    {% if not page_obj.number or page_obj.number == 1 %}
+    <tr>
+        <td colspan="5" class="px-10 py-20 text-center text-outline italic">Aucun membre ne correspond à vos critères.</td>
+    </tr>
+    {% endif %}
+{% endfor %}

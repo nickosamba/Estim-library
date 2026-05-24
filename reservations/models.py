@@ -18,6 +18,7 @@ class Reservation(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    rejection_reason = models.TextField(blank=True, null=True, verbose_name="Raison du refus")
     
     class Meta:
         ordering = ['-reserved_at']

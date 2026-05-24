@@ -3,13 +3,27 @@ from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from .models import Book, Category, Favorite, ReadingProgress, Review, Bookmark, Annotation, Chapter, Campus
 from .forms import ReviewForm, BookForm, AuthorForm
-from django.db.models import Q
+from django.db.models import Q, Avg
+from django.contrib.auth import login, get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 import requests
 import re
 import pandas as pd
 import io
+
+User = get_user_model()
+
+from django.views.decorators.http import require_GET
+from django.conf import settings
+import os
+
+@require_GET
+def service_worker(request):
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+    with open(sw_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/javascript')
+        return response
 
 def book_list(request):
     query = request.GET.get('q')
@@ -22,37 +36,45 @@ def book_list(request):
         )
     else:
         books = Book.objects.filter(is_available=True)
-    
+
     latest_books = Book.objects.filter(is_available=True).order_by('-created_at')[:6]
-    
+
+    # Real Statistics
+    total_books = Book.objects.count()
+    total_members = User.objects.count()
+
     # Smart Recommendations based on user profile (Academic + Location)
     recommendations = Book.objects.none()
-    if request.user.is_authenticated and request.user.role == 'student':
-        user_campus_code = request.user.campus.code if request.user.campus else 'all'
-        user_dept = request.user.department
+    if request.user.is_authenticated:
+        # Prioritize books for user's campus or globally available
+        recommendations = Book.objects.filter(
+            Q(target_campuses=request.user.campus) | Q(target_campuses__code='all'),
+            is_available=True
+        )
+        # Also filter by department if set
+        if request.user.department:
+            recommendations = recommendations.filter(target_department=request.user.department)
         
-        # 1. Perfect Match: Same Department AND (Same Campus OR All Campuses)
-        if user_dept:
-            recommendations = Book.objects.filter(
-                is_available=True,
-                target_department=user_dept,
-                target_campuses__code__in=[user_campus_code, 'all']
-            ).distinct().exclude(cover_image='').order_by('?')[:3]
-            
-            # 2. Fallback: Same Department, any Campus
-            if not recommendations.exists():
-                recommendations = Book.objects.filter(
-                    is_available=True,
-                    target_department=user_dept
-                ).distinct().exclude(cover_image='').order_by('?')[:3]
-        
-        # 3. Last Fallback: Any available book (if no dept or no matches)
-        if not recommendations.exists():
-            recommendations = Book.objects.filter(is_available=True).distinct().exclude(cover_image='').order_by('?')[:3]
+        recommendations = recommendations.distinct().order_by('?')[:6]
     else:
-        # For non-authenticated or staff: General recommendations
-        recommendations = Book.objects.filter(is_available=True).distinct().exclude(cover_image='').order_by('?')[:3]
+        # Fallback for anonymous users: featured or just random available books
+        recommendations = Book.objects.filter(is_available=True).order_by('?')[:6]
     
+    # Treasure of the Month Logic
+    # 1. Try manually featured books (most recent)
+    treasure_of_the_month = Book.objects.filter(is_featured=True, is_available=True).exclude(cover_image='').order_by('-updated_at').first()
+    
+    # 2. Fallback: Top Rated (min 4 stars)
+    if not treasure_of_the_month:
+        from django.db.models import Avg
+        treasure_of_the_month = Book.objects.annotate(
+            avg_rating=Avg('reviews__rating')
+        ).filter(avg_rating__gte=4, is_available=True).exclude(cover_image='').order_by('?').first()
+    
+    # 3. Last Fallback: Any available book with cover
+    if not treasure_of_the_month:
+        treasure_of_the_month = Book.objects.filter(is_available=True).exclude(cover_image='').order_by('?').first()
+
     reading_progress = []
     if request.user.is_authenticated:
         reading_progress = ReadingProgress.objects.filter(user=request.user).order_by('-updated_at')[:3]
@@ -61,8 +83,11 @@ def book_list(request):
         'books': books,
         'latest_books': latest_books,
         'recommendations': recommendations,
+        'treasure_of_the_month': treasure_of_the_month,
         'reading_progress': reading_progress,
         'search_query': query,
+        'total_books': total_books,
+        'total_members': total_members,
     }
     return render(request, 'books/book_list.html', context)
 
@@ -84,16 +109,25 @@ def book_detail(request, slug):
     if request.user.is_authenticated:
         is_local = book.is_available_at(request.user.campus)
     
+    # Livres similaires (même catégorie, excluant le livre actuel)
+    similar_books = Book.objects.filter(category=book.category).exclude(id=book.id)[:4]
+    
+    # Progression de lecture
+    reading_progress = None
+    if request.user.is_authenticated:
+        reading_progress = ReadingProgress.objects.filter(user=request.user, book=book).first()
+
     context = {
-        'book': book, 
+        'book': book,
         'is_favorite': is_favorite,
         'reviews': reviews,
         'user_review': user_review,
         'form': form,
         'is_local': is_local,
+        'similar_books': similar_books,
+        'reading_progress': reading_progress,
     }
     return render(request, 'books/book_detail.html', context)
-
 @login_required
 def add_review(request, slug):
     book = get_object_or_404(Book, slug=slug)
@@ -126,7 +160,7 @@ def add_review(request, slug):
     return redirect('books:book_detail', slug=slug)
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def export_books(request):
     format_type = request.GET.get('format', 'excel')
     books = Book.objects.all().values(
@@ -152,7 +186,7 @@ def export_books(request):
     return response
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def import_books(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
@@ -199,7 +233,7 @@ def import_books(request):
     return redirect('books:manage_books')
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def fetch_book_info(request):
     isbn = request.GET.get('isbn')
     if not isbn:
@@ -305,7 +339,7 @@ def fetch_book_info(request):
     return JsonResponse({'success': False, 'error': 'Aucun livre trouvé pour cet ISBN sur aucune plateforme.'})
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def create_author_api(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -321,7 +355,7 @@ def create_author_api(request):
     return JsonResponse({'success': False, 'error': 'Nom d\'auteur manquant ou méthode invalide.'}, status=400)
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def create_category_api(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -336,13 +370,100 @@ def create_category_api(request):
     return JsonResponse({'success': False, 'error': 'Nom de catégorie manquant ou méthode invalide.'}, status=400)
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def manage_books(request):
+    # Base Queryset
     books = Book.objects.all().order_by('-created_at')
-    return render(request, 'books/manage_books.html', {'books': books})
+    
+    # Filtering
+    query = request.GET.get('q')
+    category_id = request.GET.get('category')
+    status = request.GET.get('status')
+    
+    if query:
+        books = books.filter(
+            Q(title__icontains=query) | 
+            Q(author__name__icontains=query) |
+            Q(isbn__icontains=query)
+        )
+    
+    if category_id:
+        books = books.filter(category_id=category_id)
+        
+    if status == 'available':
+        books = books.filter(is_available=True)
+    elif status == 'unavailable':
+        books = books.filter(is_available=False)
+    elif status == 'critical':
+        books = books.filter(copies_available__lt=2)
+    elif status == 'popular':
+        from django.db.models import Count
+        books = books.annotate(res_count=Count('reservations')).filter(res_count__gt=5)
+
+    # Statistics for Widgets
+    total_count = Book.objects.count()
+    available_count = Book.objects.filter(is_available=True).count()
+    availability_rate = (available_count / total_count * 100) if total_count > 0 else 0
+    critical_count = Book.objects.filter(copies_available__lt=2, pdf_file='').count()
+    total_categories = Category.objects.count()
+    
+    # Popularity threshold for badges
+    from django.db.models import Count
+    popular_ids = Book.objects.annotate(res_count=Count('reservations')).filter(res_count__gt=10).values_list('id', flat=True)
+
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(books, 20)  # 20 livres par page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'books': page_obj,  # Pass page_obj as books
+        'page_obj': page_obj,
+        'categories': Category.objects.all(),
+        'total_count': total_count,
+        'availability_rate': round(availability_rate, 1),
+        'critical_count': critical_count,
+        'total_categories': total_categories,
+        'popular_ids': popular_ids,
+        'selected_category': category_id,
+        'selected_status': status,
+        'search_query': query,
+    }
+    
+    if request.headers.get('HX-Request'):
+        if request.headers.get('HX-Target') == 'books-table-container':
+            return render(request, 'books/partials/manage_book_list_partial.html', context)
+        # For infinite scroll, we only return the rows
+        return render(request, 'books/partials/manage_book_list_partial.html', {**context, 'infinite_scroll': True})
+        
+    return render(request, 'books/manage_books.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
+def bulk_action_books(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        book_ids = request.POST.getlist('book_ids')
+        
+        if not book_ids:
+            messages.warning(request, "Aucun livre sélectionné.")
+            return redirect('books:manage_books')
+            
+        if action == 'delete':
+            Book.objects.filter(id__in=book_ids).delete()
+            messages.success(request, f"{len(book_ids)} ouvrages ont été supprimés.")
+        elif action == 'online':
+            Book.objects.filter(id__in=book_ids).update(is_available=True)
+            messages.success(request, f"{len(book_ids)} ouvrages sont désormais en ligne.")
+        elif action == 'offline':
+            Book.objects.filter(id__in=book_ids).update(is_available=False)
+            messages.success(request, f"{len(book_ids)} ouvrages ont été mis hors ligne.")
+            
+    return redirect('books:manage_books')
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def add_book(request):
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES)
@@ -355,7 +476,7 @@ def add_book(request):
     return render(request, 'books/book_form.html', {'form': form, 'title': 'Ajouter un livre'})
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'teacher'] or u.is_staff)
+@user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def edit_book(request, slug):
     book = get_object_or_404(Book, slug=slug)
     if request.method == 'POST':
@@ -454,14 +575,27 @@ def toggle_favorite(request, slug):
     return redirect(request.META.get('HTTP_REFERER', reverse('books:book_list')))
 
 def catalog(request):
+    # Get all potential GET parameters
     query = request.GET.get('q')
     category_id = request.GET.get('category')
     dept = request.GET.get('department')
     level = request.GET.get('level')
     campus_code = request.GET.get('campus')
     
+    # Check if this is a "first load" (no filters provided at all)
+    # This allows students to see their relevant books immediately
+    is_first_load = not any([query, category_id, dept, level, campus_code])
+    
+    if is_first_load and request.user.is_authenticated:
+        if request.user.campus:
+            campus_code = request.user.campus.code
+        if request.user.department:
+            dept = request.user.department
+        # Note: We don't auto-filter by level per user request
+
     books = Book.objects.filter(is_available=True)
     
+    # Apply Filtering Logic
     if query:
         books = books.filter(
             Q(title__icontains=query) | 
@@ -479,25 +613,58 @@ def catalog(request):
         books = books.filter(target_level=level)
 
     if campus_code:
+        # Include books for specific campus OR globally available books
         books = books.filter(Q(target_campuses__code=campus_code) | Q(target_campuses__code='all')).distinct()
 
+    # Ensure consistent ordering for pagination
+    books = books.order_by('-created_at', 'id')
+
+    # Context for display
     categories = Category.objects.all()
     campuses = Campus.objects.all()
     
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(books, 12)  # 12 livres par page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Active filter names for tags
+    active_filters = []
+    selected_category_name = ""
+    if query: active_filters.append({'type': 'q', 'label': f'Recherche: {query}'})
+    if category_id: 
+        cat = Category.objects.filter(id=category_id).first()
+        if cat: 
+            active_filters.append({'type': 'category', 'label': cat.name})
+            selected_category_name = cat.name
+    if dept:
+        dept_label = dict(Book.DEPARTMENT_CHOICES).get(dept)
+        active_filters.append({'type': 'department', 'label': dept_label})
+    if campus_code:
+        camp = Campus.objects.filter(code=campus_code).first()
+        if camp: active_filters.append({'type': 'campus', 'label': camp.name})
+
     context = {
-        'books': books,
+        'books': page_obj,  # We pass the page_obj as books to the template
+        'page_obj': page_obj,
         'categories': categories,
         'departments': Book.DEPARTMENT_CHOICES,
-        'levels': Book.LEVEL_CHOICES,
         'campuses': campuses,
         'search_query': query,
         'selected_category': category_id,
+        'selected_category_name': selected_category_name,
         'selected_department': dept,
-        'selected_level': level,
         'selected_campus': campus_code,
+        'active_filters': active_filters,
     }
     
     if request.headers.get('HX-Request'):
+        # Si on cible tout le catalogue (pour mettre à jour les tags/boutons),
+        # on renvoie la page entière et HTMX sélectionnera #catalog-container.
+        if request.headers.get('HX-Target') == 'catalog-container':
+            return render(request, 'books/catalog.html', context)
+        # Sinon (recherche ou scroll infini), on renvoie juste la liste
         return render(request, 'books/partials/book_list_partial.html', context)
         
     return render(request, 'books/catalog.html', context)

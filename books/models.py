@@ -55,12 +55,13 @@ class Book(models.Model):
     target_filiere = models.CharField(max_length=100, blank=True, null=True, help_text="Option spécifique (ex: Informatique)")
     
     description = models.TextField()
-    cover_image = models.ImageField(upload_to='books/covers/')
+    cover_image = models.ImageField(upload_to='books/covers/', blank=True, null=True)
     pdf_file = models.FileField(upload_to='books/pdfs/', blank=True, null=True)
     publication_year = models.PositiveIntegerField()
     isbn = models.CharField(max_length=13, unique=True, null=True, blank=True)
     copies_available = models.PositiveIntegerField(default=1)
     is_available = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False, verbose_name="Coup de cœur (Trésor du Mois)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

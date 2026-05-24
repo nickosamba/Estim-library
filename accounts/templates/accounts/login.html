@@ -23,19 +23,47 @@
             <form class="space-y-6" method="POST">
                 {% csrf_token %}
                 <div>
-                    <label for="username" class="block text-label-md font-label-md text-on-surface-variant">Nom d'utilisateur</label>
+                    <label for="{{ form.username.id_for_label }}" class="block text-label-md font-label-md text-on-surface-variant">
+                        {{ form.username.label }}
+                    </label>
                     <div class="mt-1">
-                        <input id="username" name="username" type="text" required class="block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md">
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <p class="mt-1 text-xs text-error">{{ form.username.errors.0 }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
-                <div>
-                    <label for="password" class="block text-label-md font-label-md text-on-surface-variant flex justify-between items-center">
-                        Mot de passe
+                <div x-data="{ show: false }">
+                    <label for="{{ form.password.id_for_label }}" class="block text-label-md font-label-md text-on-surface-variant flex justify-between items-center">
+                        {{ form.password.label }}
                         <a href="{% url 'password_reset' %}" class="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">Oublié ?</a>
                     </label>
-                    <div class="mt-1">
-                        <input id="password" name="password" type="password" required class="block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md">
+                    <div class="mt-1 relative">
+                        <input :type="show ? 'text' : 'password'" 
+                               name="{{ form.password.name }}" 
+                               id="{{ form.password.id_for_label }}" 
+                               {% if form.password.value %}value="{{ form.password.value }}"{% endif %}
+                               required
+                               class="block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md bg-white pr-12">
+                        
+                        <button type="button" 
+                                @click="show = !show" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl" x-text="show ? 'visibility_off' : 'visibility'"></span>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <p class="mt-1 text-xs text-error">{{ form.password.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        {{ form.remember_me }}
+                        <label for="{{ form.remember_me.id_for_label }}" class="ml-2 block text-label-md text-on-surface-variant cursor-pointer">
+                            {{ form.remember_me.label }}
+                        </label>
                     </div>
                 </div>
 

@@ -24,7 +24,8 @@ class AuthorAdmin(admin.ModelAdmin):
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'publication_year', 'is_available', 'copies_available')
-    list_filter = ('category', 'is_available', 'publication_year')
+    list_display = ('title', 'author', 'category', 'is_featured', 'is_available', 'copies_available')
+    list_editable = ('is_featured', 'is_available', 'copies_available')
+    list_filter = ('is_featured', 'category', 'is_available', 'publication_year')
     search_fields = ('title', 'isbn', 'author__name')
     prepopulated_fields = {'slug': ('title',)}

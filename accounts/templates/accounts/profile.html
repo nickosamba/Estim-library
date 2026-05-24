@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static custom_filters %}
 
 {% block title %}Mon Profil - Estim Library{% endblock %}
 
@@ -130,7 +130,7 @@
                 <a href="{% url 'reservations:member_list' %}" class="bg-white p-8 rounded-[2.5rem] border border-outline-variant/20 card-shadow-hover transition-all group">
                     <p class="text-[10px] font-extrabold text-outline uppercase tracking-widest mb-4 opacity-60">Gestion Membres</p>
                     <div class="flex items-end justify-between">
-                        <span class="text-4xl font-extrabold text-on-background">{{ members.count|default:"Accéder" }}</span>
+                        <span class="text-4xl font-extrabold text-on-background">{{ members_count|default:"0" }}</span>
                         <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
                             <span class="material-symbols-outlined">group</span>
                         </div>
@@ -180,8 +180,8 @@
                     {% if recent_reservations %}
                         <div class="space-y-4">
                             {% for reservation in recent_reservations %}
-                                <div class="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-3xl bg-surface-container-low/30 border border-outline-variant/10 group/res transition-all hover:bg-white hover:shadow-md">
-                                    <div class="w-16 h-24 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                                <div class="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-3xl bg-surface-container-low/30 border border-outline-variant/10 group/res transition-all hover:bg-white hover:shadow-md relative overflow-hidden">
+                                    <div class="w-16 h-24 rounded-xl overflow-hidden flex-shrink-0 shadow-sm relative">
                                         {% if reservation.book.cover_image %}
                                             <img src="{{ reservation.book.cover_image.url }}" class="w-full h-full object-cover" alt="">
                                         {% else %}
@@ -189,6 +189,15 @@
                                                 <span class="material-symbols-outlined text-xl">book</span>
                                             </div>
                                         {% endif %}
+                                        
+                                        <!-- Reading Progress Overlay -->
+                                        {% with last_page=progress_map|dict_get:reservation.book.id %}
+                                            {% if last_page and last_page > 1 %}
+                                                <div class="absolute bottom-1 left-1 right-1 bg-secondary text-white text-[7px] font-black py-0.5 rounded-md flex items-center justify-center gap-1 shadow-sm">
+                                                    P. {{ last_page }}
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
                                     </div>
                                     <div class="flex-grow text-center sm:text-left">
                                         <h4 class="font-bold text-on-surface text-body-lg">{{ reservation.book.title }}</h4>
@@ -231,9 +240,7 @@
                 <div x-show="tab === 'favorites'" class="bg-white rounded-[2.5rem] p-10 border border-outline-variant/20 card-shadow animate-in fade-in duration-500">
                     <div class="flex items-center justify-between mb-8">
                         <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Coups de cœur récents</h3>
-                        <div class="px-4 py-1.5 rounded-full bg-error/10 text-error text-[10px] font-extrabold uppercase tracking-widest">
-                            {{ user.favorites.count }} Total
-                        </div>
+                        <a href="{% url 'books:catalog' %}" class="text-primary font-bold text-label-md hover:underline">Gérer mes favoris</a>
                     </div>
                     
                     {% if recent_favorites %}
@@ -270,12 +277,12 @@
                             <div class="h-[1px] bg-white/10"></div>
                             <div class="flex justify-between items-center">
                                 <span class="text-label-md font-bold opacity-80 uppercase tracking-widest">Emprunts finis</span>
-                                <span class="text-headline-lg font-extrabold">{{ user.reservations.filter.status|default:"0" }}</span>
+                                <span class="text-headline-lg font-extrabold">{{ returned_count|default:"0" }}</span>
                             </div>
                             <div class="h-[1px] bg-white/10"></div>
                             <div class="flex justify-between items-center">
                                 <span class="text-label-md font-bold opacity-80 uppercase tracking-widest">Score Culturel</span>
-                                <span class="text-headline-lg font-extrabold text-primary-fixed">150</span>
+                                <span class="text-headline-lg font-extrabold text-primary-container">{{ cultural_score|default:"0" }}</span>
                             </div>
                         </div>
                     </div>
@@ -305,7 +312,7 @@
 <!-- Edit Profile Modal -->
 <div id="profile-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center px-4">
     <div class="absolute inset-0 bg-on-background/60 backdrop-blur-sm" onclick="this.parentElement.classList.add('hidden')"></div>
-    <div class="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
+    <div class="relative bg-white rounded-[3rem] shadow-2xl w-full max-lg overflow-hidden animate-in zoom-in-95 duration-300 max-w-lg">
         <div class="p-8 border-b border-outline-variant/20 flex items-center justify-between bg-surface-container-low">
             <h3 class="text-headline-md font-extrabold text-on-background tracking-tight">Modifier mon profil</h3>
             <button onclick="document.getElementById('profile-modal').classList.add('hidden')" class="p-2 hover:bg-surface-variant/30 rounded-full transition-all">
@@ -316,18 +323,23 @@
             {% csrf_token %}
             {% for field in form %}
                 <div class="space-y-2">
-                    <label for="{{ field.id_for_label }}" class="block text-label-md font-extrabold text-primary uppercase tracking-widest text-[11px] ml-1">
+                    <label for="{{ field.id_for_label }}" class="block text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-1">
                         {{ field.label }}
                     </label>
-                    {{ field }}
+                    <div class="relative">
+                        {{ field }}
+                    </div>
                     {% if field.errors %}
                         <p class="text-error text-[10px] font-bold mt-1 ml-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <p class="text-[9px] text-outline/60 mt-1 ml-1 leading-tight">{{ field.help_text|safe }}</p>
                     {% endif %}
                 </div>
             {% endfor %}
             <div class="pt-4">
-                <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
-                    Enregistrer les modifications
+                <button type="submit" class="w-full bg-primary text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
+                    Mettre à jour le profil
                 </button>
             </div>
         </form>

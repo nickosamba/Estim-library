@@ -1,12 +1,14 @@
 from django.test import TestCase
 from django.urls import reverse
-from .models import Book, Author, Category
-from accounts.models import User
+from .models import Book, Author, Category, Campus
+from accounts.models import User, Filiere
 import io
 import pandas as pd
 
 class BooksTests(TestCase):
     def setUp(self):
+        self.campus = Campus.objects.create(name='Brazzaville', code='BZV')
+        self.filiere = Filiere.objects.create(name='Sciences', department='sciences')
         self.author = Author.objects.create(name='Test Author')
         self.category = Category.objects.create(name='Test Category')
         self.book = Book.objects.create(
@@ -21,6 +23,10 @@ class BooksTests(TestCase):
         self.staff = User.objects.create_user(
             username='staffuser',
             password='staffpassword123',
+            email='staff@test.com',
+            campus=self.campus,
+            filiere=self.filiere,
+            level='DOC',
             role='admin'
         )
 

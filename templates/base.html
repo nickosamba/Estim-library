@@ -23,6 +23,9 @@
     <meta property="twitter:title" content="Estim Library">
     <meta property="twitter:description" content="L'excellence de la lecture numérique à portée de main.">
 
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ request.build_absolute_uri|cut:request.GET.urlencode|cut:'?' }}">
+
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#755b00">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -156,7 +159,7 @@
             
             <!-- Desktop Navigation -->
             <nav class="hidden lg:flex items-center gap-8">
-                {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+                {% if user.role == 'admin' or user.role == 'librarian' or user.is_staff %}
                     <!-- Staff Navigation -->
                     <a href="{% url 'reservations:librarian_dashboard' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'librarian_dashboard' %}text-secondary{% else %}text-on-surface-variant hover:text-secondary{% endif %} transition-colors uppercase tracking-widest flex items-center gap-2 relative">
                         <span class="material-symbols-outlined text-sm">dashboard</span>
@@ -172,10 +175,12 @@
                         <span class="material-symbols-outlined text-sm">menu_book</span>
                         Livres
                     </a>
+                    {% if user.role == 'admin' or user.is_staff %}
                     <a href="{% url 'reservations:member_list' %}" class="text-label-md font-bold {% if request.resolver_match.url_name == 'member_list' %}text-secondary{% else %}text-on-surface-variant hover:text-secondary{% endif %} transition-colors uppercase tracking-widest flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">group</span>
                         Membres
                     </a>
+                    {% endif %}
                 {% else %}
                     <!-- Student Navigation -->
                     <a href="/" class="text-label-md font-bold {% if request.resolver_match.url_name == 'book_list' %}text-primary{% else %}text-on-surface-variant hover:text-primary{% endif %} transition-colors uppercase tracking-widest">Accueil</a>
@@ -190,12 +195,17 @@
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full relative block active:scale-90">
                             <span class="material-symbols-outlined">notifications</span>
-                            {% if unread_notifications_count > 0 %}
-                                <span class="absolute top-1 right-1 flex h-3 w-3">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-error text-[7px] text-white items-center justify-center font-black">{{ unread_notifications_count }}</span>
-                                </span>
-                            {% endif %}
+                            <div id="notification-badge-container"
+                                 hx-get="{% url 'get_unread_notifications_count' %}"
+                                 hx-trigger="load, updateNotificationCount from:body"
+                                 hx-swap="innerHTML">
+                                {% if unread_notifications_count > 0 %}
+                                    <span class="absolute top-1 right-1 flex h-3 w-3">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-error text-[7px] text-white items-center justify-center font-black">{{ unread_notifications_count }}</span>
+                                    </span>
+                                {% endif %}
+                            </div>
                         </button>
 
                         <!-- Dropdown Menu -->
@@ -312,7 +322,7 @@
                     <ul class="space-y-4 text-outline text-body-md">
                         <li><a href="/" class="hover:text-primary transition-colors">Accueil</a></li>
                         <li><a href="{% url 'books:catalog' %}" class="hover:text-primary transition-colors">Catalogue</a></li>
-                        {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+                        {% if user.role == 'admin' or user.role == 'librarian' or user.is_staff %}
                             <li><a href="{% url 'reservations:librarian_dashboard' %}" class="text-primary font-bold hover:underline italic">Gestion (Staff)</a></li>
                         {% endif %}
                     </ul>
@@ -329,7 +339,7 @@
                     <ul class="space-y-4 text-outline text-body-md">
                         <li class="flex items-start gap-3">
                             <span class="material-symbols-outlined text-primary text-sm">location_on</span>
-                            <span class="text-label-md">Brazzaille, République</span>
+                            <span class="text-label-md">Brazzaville, République du Congo</span>
                         </li>
                         <li class="flex items-center gap-3">
                             <span class="material-symbols-outlined text-primary text-sm">mail</span>
@@ -351,7 +361,7 @@
     <!-- BottomNavBar -->
     <nav class="fixed bottom-0 w-full z-[70] px-4 pb-8 pt-2 md:hidden">
         <div class="glass-effect rounded-3xl border border-outline-variant/30 shadow-2xl flex justify-around items-center p-2 max-w-md mx-auto">
-            {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
+            {% if user.role == 'admin' or user.role == 'librarian' or user.is_staff %}
                 <!-- Staff Mobile Navigation -->
                 <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'librarian_dashboard' %}text-secondary bg-secondary/10 rounded-2xl{% else %}text-outline hover:text-secondary{% endif %}" href="{% url 'reservations:librarian_dashboard' %}">
                     <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'librarian_dashboard' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>dashboard</span>
@@ -361,10 +371,12 @@
                     <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'manage_books' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>menu_book</span>
                     <span class="text-[10px] font-bold mt-1 uppercase">Livres</span>
                 </a>
+                {% if user.role == 'admin' or user.is_staff %}
                 <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'member_list' %}text-secondary bg-secondary/10 rounded-2xl{% else %}text-outline hover:text-secondary{% endif %}" href="{% url 'reservations:member_list' %}">
                     <span class="material-symbols-outlined" {% if request.resolver_match.url_name == 'member_list' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>group</span>
                     <span class="text-[10px] font-bold mt-1 uppercase">Membres</span>
                 </a>
+                {% endif %}
             {% else %}
                 <!-- Student Mobile Navigation -->
                 <a class="flex flex-col items-center justify-center p-3 transition-all {% if request.resolver_match.url_name == 'book_list' %}text-primary bg-primary/10 rounded-2xl{% else %}text-outline hover:text-primary{% endif %}" href="{% url 'books:book_list' %}">
@@ -392,7 +404,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/static/sw.js')
+          navigator.serviceWorker.register('/sw.js')
             .then(reg => console.log('Service Worker registered', reg))
             .catch(err => console.log('Service Worker registration failed', err));
         });

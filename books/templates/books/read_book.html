@@ -240,7 +240,7 @@
             </div>
             
             <!-- Error State -->
-            <div x-show="errorMessage" class="absolute inset-0 flex items-center justify-center z-[110] bg-var(--reader-bg) p-8 text-center" x-cloak>
+            <div x-show="errorMessage" class="absolute inset-0 flex items-center justify-center z-[110] bg-background p-8 text-center" x-cloak>
                 <div class="max-w-md bg-white dark:bg-[#1a1c1a] p-12 rounded-[3rem] shadow-2xl border border-gray-200/10">
                     <div class="w-20 h-20 bg-error/10 text-error rounded-3xl flex items-center justify-center mx-auto mb-8">
                         <span class="material-symbols-outlined text-4xl">cloud_off</span>
@@ -249,20 +249,21 @@
                     <p class="text-sm text-outline mb-10 leading-relaxed" x-text="errorMessage"></p>
                     <div class="flex flex-col gap-4">
                         <button @click="location.reload()" class="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/30 transition-transform active:scale-95">Réessayer maintenant</button>
-                        <a href="{{ book.pdf_file.url }}" download class="text-[11px] font-bold text-outline hover:text-primary transition-colors uppercase tracking-widest">Récupérer le fichier PDF</a>
+                        <a :href="pdfUrl" download class="text-[11px] font-bold text-outline hover:text-primary transition-colors uppercase tracking-widest">Récupérer le fichier PDF</a>
                     </div>
                 </div>
             </div>
 
             <!-- Canvas Rendering -->
             <div class="pdf-canvas-container mx-auto" 
+                 x-show="!isLoading && !errorMessage"
                  :style="`width: ${scale * 800}px`" id="canvas-wrapper">
                 <canvas id="pdf-canvas" class="w-full bg-white"></canvas>
             </div>
         </div>
 
         <!-- Floating Action Button -->
-        <div class="fixed bottom-10 right-10 flex flex-col gap-4 z-[55]" x-show="!zenMode" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-10 opacity-0">
+        <div class="fixed bottom-10 right-10 flex flex-col gap-4 z-[55]" x-show="!zenMode && !isLoading" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-10 opacity-0">
             <button @click="$refs.noteModal.showModal()" 
                     class="w-14 h-14 bg-primary text-white rounded-2xl shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-110 active:scale-90 transition-all">
                 <span class="material-symbols-outlined text-2xl">edit_square</span>
@@ -325,21 +326,28 @@
             sidebarOpen: false,
             zenMode: false,
             activeTab: 'sommaire',
+            pdfUrl: '',
 
             async initReader(url, startPage) {
-                console.log("Professional E-Reader: Starting...");
+                console.log("Professional E-Reader: Starting...", url);
+                this.pdfUrl = url;
                 _canvas = document.getElementById('pdf-canvas');
                 _ctx = _canvas.getContext('2d');
                 this.pageNum = parseInt(startPage) || 1;
 
                 try {
-                    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                    const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+                    if (!pdfjsLib) throw new Error("Bibliothèque PDF.js non trouvée.");
+                    
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                     
                     const loadingTask = pdfjsLib.getDocument({
                         url: url,
                         cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
                         cMapPacked: true,
+                        standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+                        disableRange: false,
+                        disableStream: false,
                     });
 
                     loadingTask.onProgress = (progress) => {
