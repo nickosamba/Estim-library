@@ -42,25 +42,27 @@
     #pdf-render-container {
         flex: 1;
         min-height: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow: auto; /* Permettre le scroll dans les deux sens */
         scroll-behavior: smooth;
-        padding-bottom: 100px;
+        padding: 20px;
+        background: var(--reader-bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         -webkit-overflow-scrolling: touch;
     }
 
     .pdf-canvas-container { 
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-        margin: 40px auto;
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
         background: white;
         border-radius: 4px;
-        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        max-width: 95%;
+        transition: width 0.3s ease;
+        width: max-content; /* S'adapter à la taille du canvas */
+        margin-bottom: 100px;
     }
 
     .dark .pdf-canvas-container { 
         filter: invert(90%) hue-rotate(180deg) contrast(95%);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
 
     .loading-overlay {
@@ -97,12 +99,21 @@
         z-index: 30;
     }
 
+    /* FIX: Force parent to not constrain the fixed reader */
+    main > div.animate-reveal-up {
+        transform: none !important;
+        animation: none !important;
+        max-width: none !important;
+        padding-bottom: 0 !important;
+        margin: 0 !important;
+    }
+
     [x-cloak] { display: none !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="fixed inset-0 z-[60] flex flex-col overflow-hidden reader-bg" 
+<div class="fixed inset-0 z-[60] flex flex-col overflow-hidden reader-bg w-screen h-screen" 
      x-data="pdfReaderComponent" 
      x-init="initReader('{{ book.pdf_file.url }}', {{ progress.last_page|default:1 }})"
      :class="darkMode ? 'dark' : ''">
@@ -127,6 +138,20 @@
 
         <!-- Controls -->
         <div class="flex items-center gap-3">
+            <!-- Comfort Indicators (Mode Zen/Immersion) -->
+            <div x-show="zenMode" x-transition class="fixed top-6 right-10 flex items-center gap-4 bg-black/20 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-bold text-white/80 z-[100]">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xs">schedule</span>
+                    <span x-text="currentTime"></span>
+                </div>
+                <template x-if="batteryLevel !== null">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-xs" x-text="batteryLevel > 20 ? 'battery_full' : 'battery_low'"></span>
+                        <span x-text="batteryLevel + '%'"></span>
+                    </div>
+                </template>
+            </div>
+
             <div class="flex items-center bg-gray-100/50 dark:bg-white/5 rounded-2xl p-1 border border-gray-200/20">
                 <button @click="prevPage()" :disabled="pageNum <= 1" class="control-btn w-10 h-10 disabled:opacity-20 text-on-background">
                     <span class="material-symbols-outlined text-lg">chevron_left</span>
@@ -255,10 +280,10 @@
             </div>
 
             <!-- Canvas Rendering -->
-            <div class="pdf-canvas-container mx-auto" 
+            <div class="pdf-canvas-container mx-auto relative" 
                  x-show="!isLoading && !errorMessage"
-                 :style="`width: ${scale * 800}px`" id="canvas-wrapper">
-                <canvas id="pdf-canvas" class="w-full bg-white"></canvas>
+                 id="canvas-wrapper">
+                <canvas id="pdf-canvas" class="bg-white shadow-2xl"></canvas>
             </div>
         </div>
 
@@ -327,6 +352,11 @@
             zenMode: false,
             activeTab: 'sommaire',
             pdfUrl: '',
+            // New state for comfort and touch
+            currentTime: '',
+            batteryLevel: null,
+            touchStartX: 0,
+            touchEndX: 0,
 
             async initReader(url, startPage) {
                 console.log("Professional E-Reader: Starting...", url);
@@ -334,6 +364,32 @@
                 _canvas = document.getElementById('pdf-canvas');
                 _ctx = _canvas.getContext('2d');
                 this.pageNum = parseInt(startPage) || 1;
+                this.isInitialLoad = true;
+
+                // Start clock
+                this.updateTime();
+                setInterval(() => this.updateTime(), 60000);
+                
+                // Get battery info
+                if (navigator.getBattery) {
+                    navigator.getBattery().then(batt => {
+                        this.batteryLevel = Math.round(batt.level * 100);
+                        batt.addEventListener('levelchange', () => {
+                            this.batteryLevel = Math.round(batt.level * 100);
+                        });
+                    });
+                }
+
+                // Add Touch Events for Swipe
+                const container = document.getElementById('pdf-render-container');
+                container.addEventListener('touchstart', (e) => {
+                    this.touchStartX = e.changedTouches[0].screenX;
+                }, {passive: true});
+                
+                container.addEventListener('touchend', (e) => {
+                    this.touchEndX = e.changedTouches[0].screenX;
+                    this.handleSwipe();
+                }, {passive: true});
 
                 try {
                     const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
@@ -369,6 +425,22 @@
                 }
             },
 
+            updateTime() {
+                const now = new Date();
+                this.currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                                  now.getMinutes().toString().padStart(2, '0');
+            },
+
+            handleSwipe() {
+                const swipeThreshold = 50;
+                if (this.touchEndX < this.touchStartX - swipeThreshold) {
+                    this.nextPage(); // Swipe Left -> Next
+                }
+                if (this.touchEndX > this.touchStartX + swipeThreshold) {
+                    this.prevPage(); // Swipe Right -> Prev
+                }
+            },
+
             async renderPage(num) {
                 if (this.pageRendering) {
                     this.pageNumPending = num;
@@ -377,19 +449,51 @@
                 this.pageRendering = true;
 
                 try {
+                    // RAM CLEANUP: Clear canvas before rendering new page
+                    _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
+
                     const page = await _pdfDoc.getPage(num);
-                    // Optimized internal scale for high-DPI clarity
-                    const viewport = page.getViewport({ scale: 2.0 }); 
                     
-                    _canvas.height = viewport.height;
-                    _canvas.width = viewport.width;
+                    // Auto-scale on first load to fit width
+                    if (this.isInitialLoad) {
+                        const container = document.getElementById('pdf-render-container');
+                        const padding = 40; // Total horizontal padding
+                        const availableWidth = container.clientWidth - padding;
+                        const unscaledViewport = page.getViewport({ scale: 1.0 });
+                        
+                        // We want viewport.width * this.scale * 1.5 = availableWidth
+                        // So this.scale = availableWidth / (viewport.width * 1.5)
+                        this.scale = availableWidth / (unscaledViewport.width * 1.5);
+                        
+                        // Clamp scale for sanity
+                        this.scale = Math.min(Math.max(this.scale, 0.5), 2.0);
+                        this.isInitialLoad = false;
+                    }
+
+                    // HD RENDERING: Calculate output scale based on Device Pixel Ratio
+                    const outputScale = window.devicePixelRatio || 1;
+                    const viewport = page.getViewport({ scale: this.scale * 1.5 }); // Base scale boost
+                    
+                    _canvas.width = Math.floor(viewport.width * outputScale);
+                    _canvas.height = Math.floor(viewport.height * outputScale);
+                    _canvas.style.width = Math.floor(viewport.width) + "px";
+                    _canvas.style.height = Math.floor(viewport.height) + "px";
+
+                    const transform = outputScale !== 1 
+                        ? [outputScale, 0, 0, outputScale, 0, 0] 
+                        : null;
 
                     const renderContext = {
                         canvasContext: _ctx,
+                        transform: transform,
                         viewport: viewport
                     };
 
                     await page.render(renderContext).promise;
+                    
+                    // Trigger Alpine refresh for progress bar
+                    this.pageNum = num;
+                    
                 } catch (error) {
                     console.error("Render Engine Error:", error);
                 } finally {
@@ -401,34 +505,34 @@
                     }
                 }
                 
-                // Track progress
                 this.syncProgress(num);
             },
 
             prevPage() {
-                if (this.pageNum <= 1) return;
-                this.pageNum--;
-                this.renderPage(this.pageNum);
+                if (this.pageNum <= 1 || this.pageRendering) return;
+                this.renderPage(this.pageNum - 1);
             },
 
             nextPage() {
-                if (this.pageNum >= this.pageCount) return;
-                this.pageNum++;
-                this.renderPage(this.pageNum);
+                if (this.pageNum >= this.pageCount || this.pageRendering) return;
+                this.renderPage(this.pageNum + 1);
             },
 
             goToPage(num) {
                 if (num < 1) num = 1;
                 if (num > this.pageCount) num = this.pageCount;
-                this.pageNum = num;
-                this.renderPage(num);
+                if (this.pageRendering) {
+                    this.pageNumPending = num;
+                } else {
+                    this.renderPage(num);
+                }
                 this.sidebarOpen = false;
-                // Scroll to top of document area
                 document.getElementById('pdf-render-container').scrollTo({top: 0, behavior: 'smooth'});
             },
 
             changeZoom(delta) {
                 this.scale = Math.min(Math.max(this.scale + delta, 0.5), 3.0);
+                this.renderPage(this.pageNum);
             },
 
             async syncProgress(num) {
