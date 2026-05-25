@@ -3,7 +3,6 @@ from django.urls import reverse
 from .models import Book, Author, Category, Campus
 from accounts.models import User, Filiere
 import io
-import pandas as pd
 
 class BooksTests(TestCase):
     def setUp(self):

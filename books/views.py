@@ -9,8 +9,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 import requests
 import re
-import pandas as pd
+import csv
 import io
+import openpyxl
 
 User = get_user_model()
 
@@ -163,27 +164,50 @@ def add_review(request, slug):
 @user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
 def export_books(request):
     format_type = request.GET.get('format', 'excel')
-    books = Book.objects.all().values(
+    books = Book.objects.all().select_related('author', 'category').values(
         'title', 'author__name', 'category__name', 'isbn', 
         'publication_year', 'copies_available', 'is_available'
     )
-    df = pd.DataFrame(list(books))
     
-    # Rename columns for better readability
-    df.columns = ['Titre', 'Auteur', 'Catégorie', 'ISBN', 'Année', 'Stock', 'Disponible']
+    headers = ['Titre', 'Auteur', 'Catégorie', 'ISBN', 'Année', 'Stock', 'Disponible']
     
     if format_type == 'csv':
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="catalogue_estim_library.csv"'
-        df.to_csv(path_or_buf=response, index=False, encoding='utf-8-sig')
+        
+        # Write UTF-8 BOM for Excel compatibility
+        response.write(b'\xef\xbb\xbf')
+        
+        writer = csv.writer(response)
+        writer.writerow(headers)
+        for b in books:
+            writer.writerow([
+                b['title'], b['author__name'], b['category__name'], 
+                b['isbn'], b['publication_year'], b['copies_available'],
+                "Oui" if b['is_available'] else "Non"
+            ])
+        return response
     else:
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="catalogue_estim_library.xlsx"'
-        with io.BytesIO() as buffer:
-            df.to_excel(buffer, index=False, engine='openpyxl')
-            response.write(buffer.getvalue())
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Catalogue"
+        
+        # Write headers
+        ws.append(headers)
+        
+        # Write data
+        for b in books:
+            ws.append([
+                b['title'], b['author__name'], b['category__name'], 
+                b['isbn'], b['publication_year'], b['copies_available'],
+                "Oui" if b['is_available'] else "Non"
+            ])
             
-    return response
+        wb.save(response)
+        return response
 
 @login_required
 @user_passes_test(lambda u: u.role in ['admin', 'librarian'] or u.is_staff)
@@ -191,14 +215,21 @@ def import_books(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
         try:
+            rows = []
             if file.name.endswith('.csv'):
-                df = pd.read_csv(file)
+                decoded_file = file.read().decode('utf-8-sig').splitlines()
+                reader = csv.DictReader(decoded_file)
+                rows = list(reader)
             else:
-                df = pd.read_excel(file)
+                wb = openpyxl.load_workbook(file)
+                ws = wb.active
+                header_row = [cell.value for cell in ws[1]]
+                for row_data in ws.iter_rows(min_row=2, values_only=True):
+                    rows.append(dict(zip(header_row, row_data)))
             
             from .models import Author
             count = 0
-            for _, row in df.iterrows():
+            for row in rows:
                 # Flexible column mapping
                 title = row.get('Titre') or row.get('title')
                 author_name = row.get('Auteur') or row.get('author')
@@ -219,8 +250,8 @@ def import_books(request):
                         defaults={
                             'category': category,
                             'isbn': isbn,
-                            'publication_year': int(year),
-                            'copies_available': int(stock),
+                            'publication_year': int(year) if year else 2024,
+                            'copies_available': int(stock) if stock else 1,
                             'is_available': True
                         }
                     )
