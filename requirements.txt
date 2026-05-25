@@ -17,14 +17,14 @@ django-widget-tweaks==1.5.1
 
 # Authentication & Security
 django-allauth==65.16.1
-cryptography==48.0.0
+cryptography
 PyJWT==2.12.1
 
 # Utilities & Data
 requests==2.31.0
 beautifulsoup4==4.12.2
-openpyxl==3.1.5
-Pillow==11.0.0
+openpyxl
+Pillow
 python-dotenv==1.2.2
 python-dateutil==2.8.2
 pytz==2023.3.post1
@@ -32,7 +32,7 @@ pytz==2023.3.post1
 # PDF Generation & Handling
 PyPDF2==3.0.1
 fpdf==1.7.2
-weasyprint==63.0
+weasyprint
 
 # Internationalization & Social
 django-countries==8.2.0
