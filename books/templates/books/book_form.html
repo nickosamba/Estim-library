@@ -43,7 +43,12 @@
                     
                     <div class="space-y-2">
                         <label class="text-[11px] font-extrabold text-secondary uppercase tracking-widest ml-1">Catégorie</label>
-                        {{ form.category }}
+                        <div class="flex gap-2">
+                            {{ form.category }}
+                            <button type="button" id="add-category-btn" class="bg-secondary/10 text-secondary px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-secondary hover:text-white transition-all whitespace-nowrap">
+                                <span class="material-symbols-outlined text-sm">category</span>
+                            </button>
+                        </div>
                         {% if form.category.errors %}<p class="text-error text-[10px] font-bold mt-1 ml-1">{{ form.category.errors.0 }}</p>{% endif %}
                     </div>
                 </div>
@@ -287,6 +292,34 @@
             }
         } catch (e) {
             console.error("Erreur création auteur", e);
+        }
+    });
+
+    // Handle Manual Category Creation
+    document.getElementById('add-category-btn').addEventListener('click', async function() {
+        const name = prompt("Entrez le nom de la nouvelle catégorie :");
+        if (!name) return;
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        try {
+            const response = await fetch("{% url 'books:create_category_api' %}", {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) {
+                const categorySelect = document.querySelector('select[name="category"]');
+                const newOpt = new Option(data.name, data.id);
+                categorySelect.add(newOpt);
+                categorySelect.value = data.id;
+            } else {
+                alert("Erreur : " + data.error);
+            }
+        } catch (e) {
+            console.error("Erreur création catégorie", e);
         }
     });
 

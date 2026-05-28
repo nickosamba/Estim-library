@@ -35,6 +35,9 @@ staticfiles/
 # Environment variables
 .env
 
+# Backups
+backups/
+
 # IDEs
 .vscode/
 .idea/

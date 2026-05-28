@@ -20,6 +20,10 @@ class Filiere(models.Model):
         return f"{self.name} ({self.get_department_display()})"
 
 class User(AbstractUser):
+    """
+    Modèle utilisateur personnalisé pour Heritage Library.
+    Gère les rôles (étudiant, bibliothécaire, admin), les campus et les cursus académiques.
+    """
     ROLE_CHOICES = (
         ('student', 'Étudiant'),
         ('teacher', 'Enseignant'),
@@ -50,18 +54,23 @@ class User(AbstractUser):
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        # Validation des contraintes du modèle (ex: email obligatoire)
+        """
+        Surcharge de la méthode save pour automatiser certaines logiques :
+        1. Validation des champs.
+        2. Gestion stricte des accès staff (seul le superuser accède à /admin/).
+        3. Assignation automatique du département via la filière choisie.
+        """
         self.full_clean()
         
-        # Seul le Superuser est considéré comme "staff" (accès à l'interface Django Admin)
+        # Sécurité : Seul le Superuser peut accéder à l'interface Django Admin
         if self.is_superuser:
             self.is_staff = True
             self.role = 'admin'
         else:
-            # Pour tous les autres (admin, teacher, student), is_staff est False
+            # Pour tous les autres rôles, l'accès staff est révoqué par défaut
             self.is_staff = False
         
-        # Automatisation du département via la filière
+        # Automatisation du département pour éviter les erreurs de saisie
         if self.filiere:
             self.department = self.filiere.department
             

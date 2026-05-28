@@ -26,9 +26,9 @@
         <form hx-get="{% url 'books:catalog' %}" 
               hx-target="#catalog-container" 
               hx-select="#catalog-container"
-              hx-trigger="submit, keyup changed delay:500ms from:input[name='q']"
+              hx-trigger="submit, keyup changed delay:600ms from:input[name='q']"
               hx-indicator="#catalog-spinner"
-              hx-indicator="#catalog-spinner" hx-push-url="true"
+              hx-push-url="true"
               class="flex items-center bg-white rounded-full border border-outline/30 px-6 py-4 shadow-sm focus-within:ring-2 focus-within:ring-primary-container focus-within:border-primary transition-all">
             <span class="material-symbols-outlined text-outline mr-3">search</span>
             <input 

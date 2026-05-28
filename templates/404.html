@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Page Non Trouvée - Estim Library{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 animate-reveal-up">
+    <!-- Icon Container -->
+    <div class="relative mb-8">
+        <div class="w-32 h-32 bg-primary/5 rounded-full flex items-center justify-center animate-pulse">
+            <span class="material-symbols-outlined text-primary text-6xl">search_off</span>
+        </div>
+        <div class="absolute -top-2 -right-2 bg-error text-white w-10 h-10 rounded-full flex items-center justify-center font-black text-xl shadow-lg animate-bounce">
+            404
+        </div>
+    </div>
+
+    <!-- Message -->
+    <h1 class="text-headline-lg font-black text-on-background mb-4 tracking-tight">Oups ! Page Introuvable</h1>
+    <p class="text-body-lg text-outline max-w-md mx-auto mb-10 leading-relaxed font-medium">
+        Désolé, l'ouvrage ou la page que vous recherchez semble s'être égaré dans nos rayonnages numériques.
+    </p>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4">
+        <a href="{% url 'books:book_list' %}" class="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-label-lg shadow-xl shadow-primary/20 hover:brightness-110 hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">home</span>
+            Retour à l'accueil
+        </a>
+        <a href="{% url 'books:catalog' %}" class="bg-surface-container-high text-on-surface px-8 py-4 rounded-2xl font-bold text-label-lg border border-outline-variant/30 hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">library_books</span>
+            Explorer le catalogue
+        </a>
+    </div>
+
+    <!-- Decoration -->
+    <div class="mt-20 opacity-10">
+        <div class="african-pattern-overlay w-64 h-24"></div>
+    </div>
+</div>
+{% endblock %}

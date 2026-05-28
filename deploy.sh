@@ -6,6 +6,10 @@ set -e
 # Script de déploiement pour Estim Library (Linux/macOS)
 echo "--- 🚀 Lancement du déploiement d'Estim Library ---"
 
+# 0. Sauvegarde de sécurité automatique
+echo "🔐 Sauvegarde de sécurité (Vault)..."
+python vault_backup.py
+
 # 1. Mise à jour des dépendances
 echo "📦 Installation des dépendances..."
 pip install -r requirements.txt

@@ -274,8 +274,8 @@
                         {% endif %}
                     </a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="hidden md:block text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors">Connexion</a>
-                    <a href="{% url 'register' %}" class="bg-primary text-white px-6 py-2.5 rounded-full text-label-md font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all">S'inscrire</a>
+                    <a href="{% url 'login' %}" class="bg-primary text-white px-6 py-2.5 rounded-full text-label-md font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 md:bg-transparent md:text-on-surface-variant md:px-0 md:py-0 md:shadow-none md:hover:text-primary transition-all">Connexion</a>
+                    <a href="{% url 'register' %}" class="hidden md:block bg-primary text-white px-6 py-2.5 rounded-full text-label-md font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all">S'inscrire</a>
                 {% endif %}
             </div>
         </div>
@@ -402,6 +402,46 @@
     {% block extra_js %}{% endblock %}
     
     <script>
+      let deferredPrompt;
+      const installCard = document.getElementById('pwa-install-card');
+      const installBtn = document.getElementById('pwa-install-button');
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        
+        // Update UI notify the user they can install the PWA
+        if (installCard) {
+          installCard.classList.remove('hidden');
+        }
+      });
+
+      if (installBtn) {
+        installBtn.addEventListener('click', (e) => {
+          if (!deferredPrompt) return;
+          // Show the prompt
+          deferredPrompt.prompt();
+          // Wait for the user to respond to the prompt
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('User accepted the A2HS prompt');
+              if (installCard) installCard.classList.add('hidden');
+            } else {
+              console.log('User dismissed the A2HS prompt');
+            }
+            deferredPrompt = null;
+          });
+        });
+      }
+
+      // Check if already installed
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('PWA was installed');
+        if (installCard) installCard.classList.add('hidden');
+      });
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')

@@ -12,9 +12,13 @@ def is_librarian(user):
 
 @login_required
 def reserve_book(request, slug):
+    """
+    Gère la création d'une demande de réservation pour un étudiant.
+    Vérifie la disponibilité physique sur le campus de l'utilisateur.
+    """
     book = get_object_or_404(Book, slug=slug)
     
-    # Validation du Campus
+    # Validation de la présence physique sur le campus de l'étudiant
     if not book.is_available_at(request.user.campus):
         if not request.user.campus:
             msg = "Profil incomplet (Campus)"
@@ -23,16 +27,19 @@ def reserve_book(request, slug):
             msg = "Campus différent"
             messages.error(request, f"Désolé, '{book.title}' n'est pas disponible sur votre campus ({request.user.campus.name}).")
         
+        # Réponse HTMX pour mettre à jour le bouton sans recharger la page
         if request.headers.get('HX-Request'):
             return HttpResponse(f'<button disabled class="bg-error/10 text-error px-4 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-tight opacity-80 cursor-default flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">location_off</span> {msg}</button>')
         return redirect('books:book_detail', slug=slug)
 
+    # Vérification du stock physique
     if book.copies_available <= 0:
         messages.error(request, f"Désolé, '{book.title}' n'est plus disponible en stock.")
         if request.headers.get('HX-Request'):
             return HttpResponse(f'<button disabled class="bg-error/10 text-error px-4 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-tight opacity-80 cursor-default">Stock Épuisé</button>')
         return redirect('books:book_detail', slug=slug)
     
+    # Empêcher les doublons de réservation pour le même livre
     existing_reservation = Reservation.objects.filter(
         user=request.user, 
         book=book, 
@@ -45,15 +52,16 @@ def reserve_book(request, slug):
             return HttpResponse(f'<button disabled class="bg-primary/10 text-primary px-4 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-tight opacity-80 cursor-default flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">info</span> Déjà réservé</button>')
         return redirect('books:book_detail', slug=slug)
     
+    # Création de la réservation (le statut par défaut est 'En attente')
     reservation = Reservation.objects.create(
         user=request.user,
         book=book,
         status='pending'
     )
     
-    # La gestion du stock est maintenant gérée par les signaux (reservations/signals.py)
+    # Note: La mise à jour automatique du stock est gérée par reservations/signals.py
 
-    # Notification pour le staff (bibliothécaires uniquement)
+    # Notification instantanée pour le staff (bibliothécaires)
     from accounts.models import User, Notification
     staff_members = User.objects.filter(role='librarian')
     for staff in staff_members:
@@ -75,29 +83,34 @@ def reserve_book(request, slug):
 
 @login_required
 def cancel_reservation(request, reservation_id):
+    """
+    Permet à l'étudiant d'annuler une réservation encore en attente ou approuvée.
+    """
     reservation = get_object_or_404(Reservation, id=reservation_id, user=request.user)
     if reservation.status in ['pending', 'approved']:
         reservation.status = 'cancelled'
         reservation.save()
-        # Le stock est géré par les signaux
         messages.success(request, "Réservation annulée.")
     
     if request.headers.get('HX-Request'):
-        return HttpResponse("") # HTMX will remove the element
+        return HttpResponse("") # HTMX retire l'élément de la liste
         
     return redirect('reservations:my_reservations')
 
 @login_required
 def my_reservations(request):
-    all_reservations = Reservation.objects.filter(user=request.user).order_by('-reserved_at')
+    """
+    Affiche l'historique et les réservations actives de l'étudiant.
+    """
+    # Optimisation : Chargement des livres et auteurs liés
+    all_reservations = Reservation.objects.filter(user=request.user).select_related('book', 'book__author').order_by('-reserved_at')
 
     current_reservations = all_reservations.filter(status__in=['pending', 'approved', 'borrowed'])
     past_reservations = all_reservations.filter(status__in=['returned', 'rejected', 'cancelled'])
 
-    # Récupérer les progressions de lecture pour les badges
+    # Synchronisation des badges de progression de lecture pour les PDF
     from books.models import ReadingProgress
     progresses = ReadingProgress.objects.filter(user=request.user)
-    # Créer un dictionnaire pour un accès facile dans le template : {book_id: last_page}
     progress_map = {p.book_id: p.last_page for p in progresses}
 
     context = {
@@ -107,17 +120,21 @@ def my_reservations(request):
         'progress_map': progress_map,
     }
     return render(request, 'reservations/my_reservations.html', context)
+
 @login_required
 @user_passes_test(is_librarian)
 def member_list(request):
+    """
+    Liste des membres pour le staff avec recherche et filtrage par campus.
+    """
     from accounts.models import User
     from books.models import Campus
     from django.db.models import Count, Q, Exists, OuterRef
     
-    # Base Queryset
-    members = User.objects.all().order_by('-date_joined')
+    # Base Queryset optimisée (relations campus et filière)
+    members = User.objects.all().select_related('campus', 'filiere').order_by('-date_joined')
     
-    # Filters
+    # Application des filtres de recherche
     query = request.GET.get('q')
     campus_id = request.GET.get('campus')
     dept = request.GET.get('department')
@@ -135,7 +152,7 @@ def member_list(request):
     if dept:
         members = members.filter(department=dept)
 
-    # Annotate with late status
+    # Détection des membres ayant des retards critiques
     today = timezone.now().date()
     overdue_reservations = Reservation.objects.filter(
         user=OuterRef('pk'),
@@ -144,7 +161,7 @@ def member_list(request):
     )
     members = members.annotate(has_overdue=Exists(overdue_reservations))
 
-    # Pagination
+    # Pagination par lots de 20 membres
     from django.core.paginator import Paginator
     paginator = Paginator(members, 20)
     page_number = request.GET.get('page')
@@ -168,44 +185,36 @@ def member_list(request):
     return render(request, 'reservations/member_list.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.role == 'admin' or u.is_superuser)
-def change_member_role(request, user_id):
-    from accounts.models import User
-    member = get_object_or_404(User, id=user_id)
-    if request.method == 'POST':
-        new_role = request.POST.get('role')
-        if new_role in dict(User.ROLE_CHOICES):
-            member.role = new_role
-            # La mise à jour de is_staff est gérée par la méthode save() du modèle User
-            member.save()
-            messages.success(request, f"Le rôle de {member.username} a été mis à jour vers {member.get_role_display()}.")
-    return redirect('reservations:member_list')
-
-@login_required
 @user_passes_test(is_librarian)
 def librarian_dashboard(request):
-    reservations = Reservation.objects.all().order_by('-reserved_at')
+    """
+    Tableau de bord principal pour la gestion des stocks et emprunts.
+    Optimisé pour charger les relations utilisateur et livre en une seule fois.
+    """
+    # Récupération de toutes les réservations avec pré-chargement
+    reservations = Reservation.objects.all().select_related('user', 'book', 'user__campus').order_by('-reserved_at')
+    
+    # Statistiques rapides pour les widgets
     pending_count = reservations.filter(status='pending').count()
     borrowed_count = reservations.filter(status='borrowed').count()
     total_books = Book.objects.count()
 
-    # Gestion des retards
+    # Surveillance des retards de restitution
     today = timezone.now().date()
     late_reservations = reservations.filter(status='borrowed', end_date__lt=today)
     late_count = late_reservations.count()
 
-    # Statistiques des livres les plus populaires (top 5)
+    # Analyse des ouvrages les plus populaires (top 5)
     from django.db.models import Count
     popular_books = Book.objects.annotate(
         res_count=Count('reservations')
     ).order_by('-res_count')[:5]
 
-    # Academic Analytics
+    # Données analytiques pour les graphiques (JSON)
     from accounts.models import User
-    from django.db.models import Count
     import json
 
-    # Count reservations per department
+    # Statistiques par département (utilisé pour le graphique Bar Chart)
     dept_stats = reservations.values('user__department').annotate(
         count=Count('id')
     ).order_by('-count')
@@ -216,7 +225,7 @@ def librarian_dashboard(request):
         'values': [item['count'] for item in dept_stats if item['user__department']]
     }
 
-    # Count reservations per level
+    # Statistiques par niveau d'étude
     level_stats = reservations.values('user__level').annotate(
         count=Count('id')
     ).order_by('-count')
@@ -239,6 +248,23 @@ def librarian_dashboard(request):
         'today': today,
     }
     return render(request, 'reservations/librarian_dashboard.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin' or u.is_superuser)
+def change_member_role(request, user_id):
+    """
+    Permet à l'administrateur de changer le rôle d'un membre (ex: passer étudiant à bibliothécaire).
+    """
+    from accounts.models import User
+    member = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        new_role = request.POST.get('role')
+        if new_role in dict(User.ROLE_CHOICES):
+            member.role = new_role
+            # La méthode save() du modèle User gère automatiquement is_staff
+            member.save()
+            messages.success(request, f"Le rôle de {member.username} a été mis à jour vers {member.get_role_display()}.")
+    return redirect('reservations:member_list')
 
 
 @login_required

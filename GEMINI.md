@@ -34,11 +34,11 @@
 
 ### 6. Catalogue & Navigation
 - **STATUT** : VALIDÉ ET FIGÉ.
-- **Auto-filtrage Intelligent** : Au premier chargement pour un utilisateur connecté, le catalogue filtre automatiquement par **Campus** et **Département** (le niveau est exclu par défaut).
+- **Auto-filtrage Intelligent Inclusif** : Au premier chargement, le catalogue filtre par le Campus et le Département de l'étudiant, tout en incluant **systématiquement** les ouvrages "Tout Public" (ceux sans campus ou département assigné). Cela garantit que les ressources générales (dictionnaires, culture) sont toujours visibles.
+- **Interface Simplifiée & Unique** : La liste des filtres exclut les campus virtuels (ex: "Tous les campus") pour ne montrer que les sites physiques. Le bouton "Tous les sites" sert de point d'entrée unique pour voir l'intégralité du fonds documentaire.
+- **Protection contre les Doublons** : Utilisation systématique de `distinct()` sur les requêtes de filtrage pour éviter toute répétition d'ouvrages liée aux relations multi-campus.
 - **Pagination Infinite Scroll** : Implémentation via HTMX (`hx-trigger="revealed"`) par lots de 12 ouvrages pour garantir la fluidité, quel que soit le volume de données.
 - **Réservation HTMX Fluide** : Les réservations depuis le catalogue s'effectuent sans rechargement de page. Le bouton se transforme dynamiquement en badge d'état ("Réservé", "Déjà réservé", "Campus différent") pour une expérience utilisateur sans interruption.
-- **Interface Épurée & Robuste** : L'indicateur de chargement (`#catalog-spinner`) est isolé pour ne pas bloquer les interactions locales et ne s'active que lors des filtrages globaux. Les erreurs de réservation sont gérées via des fragments HTML dédiés pour éviter les collisions de templates.
-- **Unification des Filtres** : La recherche et les filtres mettent à jour les "Tags de filtres actifs" pour une visibilité totale des critères appliqués.
 
 ### 7. Page Détail & Expérience Immersive
 - **STATUT** : VALIDÉ ET FIGÉ.
@@ -78,6 +78,9 @@
 - **STATUT** : VALIDÉ ET FIGÉ.
 - **Pilotage Analytique (Admin)** : Widgets de performance en temps réel (Disponibilité, Stock critique, Diversité) et graphiques analytiques par département/niveau.
 - **Gestion Opérationnelle HTMX (Staff)** : Mise à jour des statuts de réservation sans rechargement de page, avec synchronisation dynamique des compteurs de statistiques.
+- **Formulaire d'Ajout Rapide & Ergonome** : 
+    - Le formulaire de création d'ouvrage intègre des boutons d'**Ajout Rapide** pour les **Auteurs** et les **Catégories**, permettant de créer ces entités à la volée sans quitter le formulaire.
+    - Le champ **Description / Résumé** est strictement **obligatoire** pour garantir la qualité du catalogue et l'efficacité de la recherche plein texte.
 - **Actions Groupées (Catalogue)** : Interface de modification en masse (En ligne, Hors ligne, Suppression) pour une gestion efficace du stock.
 - **Gestion Hybride (Physique/Numérique)** : 
     - Les ouvrages disposant d'une version PDF et ayant 0 exemplaire physique ne sont plus comptabilisés dans le **Stock Critique**.

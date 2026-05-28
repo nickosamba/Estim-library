@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur Serveur - Estim Library{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 animate-reveal-up">
+    <!-- Icon Container -->
+    <div class="relative mb-8">
+        <div class="w-32 h-32 bg-secondary/5 rounded-full flex items-center justify-center">
+            <span class="material-symbols-outlined text-secondary text-6xl">build</span>
+        </div>
+        <div class="absolute -top-2 -right-2 bg-error text-white w-10 h-10 rounded-full flex items-center justify-center font-black text-xl shadow-lg">
+            500
+        </div>
+    </div>
+
+    <!-- Message -->
+    <h1 class="text-headline-lg font-black text-on-background mb-4 tracking-tight">Rayonnage en Maintenance</h1>
+    <p class="text-body-lg text-outline max-w-md mx-auto mb-10 leading-relaxed font-medium">
+        Une erreur interne s'est produite. Nos bibliothécaires numériques travaillent d'arrache-pied pour remettre de l'ordre dans les fichiers.
+    </p>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4">
+        <a href="{% url 'books:book_list' %}" class="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-label-lg shadow-xl shadow-primary/20 hover:brightness-110 hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">refresh</span>
+            Réessayer
+        </a>
+        <a href="mailto:aztech140@gmail.com" class="bg-surface-container-high text-on-surface px-8 py-4 rounded-2xl font-bold text-label-lg border border-outline-variant/30 hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">support_agent</span>
+            Signaler le problème
+        </a>
+    </div>
+</div>
+{% endblock %}
