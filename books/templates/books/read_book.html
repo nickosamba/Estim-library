@@ -127,7 +127,7 @@
                 <span class="material-symbols-outlined text-[22px]" x-text="sidebarOpen ? 'dock_to_left' : 'menu'"></span>
             </button>
             <div class="h-6 w-px bg-gray-300/30"></div>
-            <a href="{% url 'books:book_detail' book.slug %}" class="control-btn text-error/80 hover:text-error hover:bg-error/10">
+            <a href="{% url 'books:book_detail' book.slug %}" onclick="event.preventDefault(); window.history.length > 1 ? window.history.back() : window.location.href='{% url 'books:book_detail' book.slug %}'" class="control-btn text-error/80 hover:text-error hover:bg-error/10">
                 <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </a>
             <div class="hidden lg:block ml-2">
@@ -457,16 +457,15 @@
                     // Auto-scale on first load to fit width
                     if (this.isInitialLoad) {
                         const container = document.getElementById('pdf-render-container');
-                        const padding = 40; // Total horizontal padding
+                        const padding = window.innerWidth < 640 ? 10 : 40; // Less padding on mobile
                         const availableWidth = container.clientWidth - padding;
                         const unscaledViewport = page.getViewport({ scale: 1.0 });
                         
-                        // We want viewport.width * this.scale * 1.5 = availableWidth
-                        // So this.scale = availableWidth / (viewport.width * 1.5)
+                        // Fit to width: scale = availableWidth / viewport.width
                         this.scale = availableWidth / (unscaledViewport.width * 1.5);
                         
                         // Clamp scale for sanity
-                        this.scale = Math.min(Math.max(this.scale, 0.5), 2.0);
+                        this.scale = Math.min(Math.max(this.scale, 0.3), 2.0);
                         this.isInitialLoad = false;
                     }
 

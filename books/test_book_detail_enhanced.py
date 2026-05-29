@@ -65,7 +65,7 @@ class BookDetailEnhancedTest(TestCase):
         response = self.client.get(reverse('books:book_detail', kwargs={'slug': self.book.slug}))
         
         self.assertContains(response, "Reprendre")
-        self.assertContains(response, "PAGE 42")
+        self.assertContains(response, "P. 42")
 
     def test_htmx_reservation_on_detail_page(self):
         """Vérifie que la réservation HTMX fonctionne sur la page détail."""

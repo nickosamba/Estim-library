@@ -132,7 +132,8 @@ def member_list(request):
     from django.db.models import Count, Q, Exists, OuterRef
     
     # Base Queryset optimisée (relations campus et filière)
-    members = User.objects.all().select_related('campus', 'filiere').order_by('-date_joined')
+    # On exclut les super-utilisateurs de la liste de gestion des membres
+    members = User.objects.exclude(is_superuser=True).select_related('campus', 'filiere').order_by('-date_joined')
     
     # Application des filtres de recherche
     query = request.GET.get('q')

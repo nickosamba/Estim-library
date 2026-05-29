@@ -18,14 +18,14 @@ def handle_stock_on_status_change(sender, instance, **kwargs):
 
             if old_status in reduce_stock_statuses and new_status in return_stock_statuses:
                 book.copies_available += 1
-                if book.copies_available > 0:
+                if book.copies_available > 0 or book.pdf_file:
                     book.is_available = True
                 book.save()
             
             elif old_status in return_stock_statuses and new_status in reduce_stock_statuses:
                 if book.copies_available > 0:
                     book.copies_available -= 1
-                    if book.copies_available == 0:
+                    if book.copies_available == 0 and not book.pdf_file:
                         book.is_available = False
                     book.save()
         except Reservation.DoesNotExist:
@@ -39,6 +39,6 @@ def handle_new_reservation_stock(sender, instance, created, **kwargs):
             book = instance.book
             if book.copies_available > 0:
                 book.copies_available -= 1
-                if book.copies_available == 0:
+                if book.copies_available == 0 and not book.pdf_file:
                     book.is_available = False
                 book.save()

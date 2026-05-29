@@ -57,12 +57,14 @@ class CustomUserCreationForm(UserCreationForm):
             self.fields['campus'].required = True
             self.fields['campus'].empty_label = "Choisir un campus"
 
+        # Les champs filiere et level ne sont plus forcés à True ici 
+        # pour permettre la flexibilité selon le rôle (géré dans clean())
         if 'filiere' in self.fields:
-            self.fields['filiere'].required = True
+            self.fields['filiere'].required = False # Sera vérifié dans clean()
             self.fields['filiere'].empty_label = "Choisir une filière"
 
         if 'level' in self.fields:
-            self.fields['level'].required = True
+            self.fields['level'].required = False # Sera vérifié dans clean()
             choices = list(self.fields['level'].choices)
             if choices and choices[0][0] == '':
                 choices[0] = ('', 'Choisir votre niveau')
@@ -82,6 +84,21 @@ class CustomUserCreationForm(UserCreationForm):
             field.widget.attrs.update({
                 'class': 'block w-full px-4 py-3 border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-primary transition-all text-body-md bg-white'
             })
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role', 'student') # Par défaut étudiant (inscription publique)
+        filiere = cleaned_data.get('filiere')
+        level = cleaned_data.get('level')
+
+        # Validation conditionnelle : Obligatoire SEULEMENT pour les étudiants
+        if role == 'student':
+            if not filiere:
+                self.add_error('filiere', "Ce champ est obligatoire pour les étudiants.")
+            if not level:
+                self.add_error('level', "Ce champ est obligatoire pour les étudiants.")
+        
+        return cleaned_data
 
 
 class ProfileUpdateForm(forms.ModelForm):

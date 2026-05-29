@@ -58,12 +58,13 @@
 <div class="max-w-2xl mx-auto px-margin-mobile pt-8 pb-40">
     <!-- Back Button & Admin Badge -->
     <div class="mb-8 flex justify-between items-center">
-        <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-primary font-bold hover:translate-x-1 transition-transform">
+        <a href="{% url 'books:catalog' %}" class="inline-flex items-center gap-2 text-primary font-bold hover:translate-x-1 transition-transform">
             <span class="material-symbols-outlined">arrow_back</span>
-            <span>Retour</span>
+            <span class="hidden sm:inline">Retour au catalogue</span>
+            <span class="sm:hidden">Retour</span>
         </a>
         {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
-            <div class="px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-secondary/20">
+            <div class="hidden sm:flex px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-black uppercase tracking-widest items-center gap-2 border border-secondary/20">
                 <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
                 Mode Gestionnaire
             </div>
@@ -72,19 +73,19 @@
 
     {% if user.role == 'admin' or user.role == 'teacher' or user.is_staff %}
     <!-- Admin Quick Management Bar -->
-    <div class="mb-12 p-8 rounded-[2.5rem] bg-secondary text-white shadow-2xl relative overflow-hidden group">
+    <div class="mb-12 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-secondary text-white shadow-2xl relative overflow-hidden group">
         <div class="relative z-10">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="text-center md:text-left">
-                    <h3 class="text-xl font-extrabold tracking-tight mb-1">Gestion de l'ouvrage</h3>
-                    <p class="text-white/70 text-[10px] font-bold uppercase tracking-widest">Outils d'administration rapide</p>
+                    <h3 class="text-lg md:text-xl font-extrabold tracking-tight mb-1">Gestion de l'ouvrage</h3>
+                    <p class="text-white/70 text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Outils d'administration rapide</p>
                 </div>
                 <div class="flex flex-wrap justify-center gap-3">
-                    <a href="{% url 'books:edit_book' book.slug %}" class="bg-white text-secondary px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-all">
+                    <a href="{% url 'books:edit_book' book.slug %}" class="bg-white text-secondary px-5 py-2.5 md:px-6 md:py-3 rounded-xl font-bold text-[10px] md:text-[11px] uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-all text-center">
                         <span class="material-symbols-outlined text-sm">edit</span>
-                        Modifier la fiche
+                        Modifier
                     </a>
-                    <div class="bg-white/10 px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center gap-2 border border-white/20">
+                    <div class="bg-white/10 px-5 py-2.5 md:px-6 md:py-3 rounded-xl font-bold text-[10px] md:text-[11px] uppercase tracking-wider flex items-center gap-2 border border-white/20">
                         <span class="material-symbols-outlined text-sm">inventory_2</span>
                         {{ book.copies_available }} en stock
                     </div>
@@ -99,11 +100,11 @@
     <section class="mb-12 flex flex-col items-center text-center">
         <div class="relative group w-full flex justify-center mb-8">
             <div class="absolute inset-0 pattern-bg -z-10 rounded-3xl scale-110"></div>
-            <div class="shadow-2xl rounded-2xl overflow-hidden border border-outline-variant/20 transform transition-transform hover:scale-[1.02] duration-500 max-w-[300px]">
+            <div class="shadow-2xl rounded-2xl overflow-hidden border border-outline-variant/20 transform transition-transform hover:scale-[1.02] duration-500 w-56 md:w-64">
                 {% if book.cover_image and book.cover_image.name %}
                     <img src="{{ book.cover_image.url }}" class="w-full h-auto object-cover" alt="{{ book.title }}">
                 {% else %}
-                    <div class="w-64 h-96 bg-surface-container flex items-center justify-center text-outline/20">
+                    <div class="w-full aspect-[2/3] bg-surface-container flex items-center justify-center text-outline/20">
                         <span class="material-symbols-outlined text-7xl">book_4</span>
                     </div>
                 {% endif %}
@@ -111,9 +112,9 @@
         </div>
         
         <div class="space-y-2">
-            <h2 class="text-headline-xl font-extrabold text-primary tracking-tight leading-tight">{{ book.title }}</h2>
+            <h2 class="text-headline-lg md:text-headline-xl font-extrabold text-primary tracking-tight leading-tight">{{ book.title }}</h2>
             <div class="flex items-center justify-center gap-4">
-                <p class="text-headline-md text-on-surface-variant font-medium opacity-80 italic">par {{ book.author.name }}</p>
+                <p class="text-title-medium md:text-headline-md text-on-surface-variant font-medium opacity-80 italic">par {{ book.author.name }}</p>
                 <a href="{% url 'books:toggle_favorite' book.slug %}" class="p-2 rounded-full hover:bg-error/10 transition-all {% if is_favorite %}text-error{% else %}text-outline{% endif %}">
                     <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' {% if is_favorite %}1{% else %}0{% endif %};">favorite</span>
                 </a>
@@ -123,16 +124,16 @@
             <div class="flex items-center justify-center gap-2 mt-2">
                 <div class="flex items-center text-secondary">
                     {% for i in "12345" %}
-                        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' {% if i|add:0 <= book.average_rating %}1{% else %}0{% endif %};">
+                        <span class="material-symbols-outlined text-[18px] md:text-[20px]" style="font-variation-settings: 'FILL' {% if i|add:0 <= book.average_rating %}1{% else %}0{% endif %};">
                             star
                         </span>
                     {% endfor %}
                 </div>
                 <span class="text-label-md font-bold text-on-surface-variant">({{ book.average_rating }})</span>
-                <span class="text-outline text-label-sm">• {{ book.review_count }} avis</span>
+                <span class="text-outline text-[10px] md:text-label-sm">• {{ book.review_count }} avis</span>
             </div>
             {% if book.category %}
-                <span class="inline-block bg-primary/10 text-primary text-[12px] font-bold px-4 py-1 rounded-full uppercase tracking-widest mt-4">
+                <span class="inline-block bg-primary/10 text-primary text-[10px] md:text-[12px] font-bold px-4 py-1 rounded-full uppercase tracking-widest mt-4">
                     {{ book.category.name }}
                 </span>
             {% endif %}
@@ -140,18 +141,18 @@
     </section>
 
     <!-- Stats Grid -->
-    <section class="grid grid-cols-3 gap-4 mb-12 animate-slide-up stagger-1">
-        <div class="bg-white border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm">
-            <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
-            <span class="font-bold text-on-surface text-label-md">{{ book.copies_available }} Copie{{ book.copies_available|pluralize }}</span>
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12 animate-slide-up stagger-1">
+        <div class="bg-white border border-outline-variant/30 rounded-2xl p-4 md:p-6 flex flex-row sm:flex-col items-center justify-center gap-4 sm:gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-secondary text-2xl md:text-3xl" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+            <span class="font-bold text-on-surface text-[12px] md:text-label-md">{{ book.copies_available }} Copie{{ book.copies_available|pluralize }}</span>
         </div>
-        <div class="bg-white border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm">
-            <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">language</span>
-            <span class="font-bold text-on-surface text-label-md">Français</span>
+        <div class="bg-white border border-outline-variant/30 rounded-2xl p-4 md:p-6 flex flex-row sm:flex-col items-center justify-center gap-4 sm:gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-secondary text-2xl md:text-3xl" style="font-variation-settings: 'FILL' 1;">language</span>
+            <span class="font-bold text-on-surface text-[12px] md:text-label-md">Français</span>
         </div>
-        <div class="bg-white border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm">
-            <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
-            <span class="font-bold text-on-surface text-label-md">{{ book.publication_year }}</span>
+        <div class="bg-white border border-outline-variant/30 rounded-2xl p-4 md:p-6 flex flex-row sm:flex-col items-center justify-center gap-4 sm:gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-secondary text-2xl md:text-3xl" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+            <span class="font-bold text-on-surface text-[12px] md:text-label-md">{{ book.publication_year }}</span>
         </div>
     </section>
 
@@ -336,47 +337,41 @@
 
 <!-- Floating Action Area -->
 <div class="fixed bottom-24 left-0 right-0 z-[60] px-margin-mobile">
-    <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4 p-4 glass-effect rounded-[2.5rem] border border-outline-variant/30 shadow-2xl">
-        <div class="flex gap-4 flex-1">
+    <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-3 p-3 sm:p-4 glass-effect rounded-[2rem] sm:rounded-[2.5rem] border border-outline-variant/30 shadow-2xl">
+        <div class="flex gap-2 sm:gap-4 flex-1">
             {% if not user.is_staff and user.role != 'admin' and user.role != 'teacher' %}
                 {% if book.copies_available > 0 %}
                     <a hx-get="{% url 'reservations:reserve_book' book.slug %}" 
                        hx-swap="outerHTML"
-                       class="bg-primary hover:brightness-110 text-white font-bold uppercase py-4 px-8 rounded-2xl flex-1 transition-all active:scale-95 shadow-lg shadow-primary/30 flex items-center justify-center gap-3 cursor-pointer">
-                        <span class="material-symbols-outlined">bookmark_add</span>
-                        <span class="text-label-md">Réserver</span>
+                       class="bg-primary hover:brightness-110 text-white font-bold uppercase py-3.5 sm:py-4 px-4 sm:px-8 rounded-2xl flex-1 transition-all active:scale-95 shadow-lg shadow-primary/30 flex items-center justify-center gap-2 sm:gap-3 cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px] sm:text-[24px]">bookmark_add</span>
+                        <span class="text-[11px] sm:text-label-md">Réserver</span>
                     </a>
-                {% elif book.pdf_file %}
-                    <div class="bg-primary text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase flex-1 flex flex-col items-center justify-center text-center leading-tight border border-white/20 shadow-lg relative overflow-hidden group">
-                        <span class="relative z-10">Accès Numérique Illimité</span>
-                        <span class="text-[8px] opacity-70 relative z-10 lowercase font-medium">Aucun exemplaire physique disponible</span>
-                        <div class="absolute inset-0 african-pattern-overlay opacity-10 scale-150 rotate-12 group-hover:rotate-0 transition-transform duration-1000"></div>
-                    </div>
-                {% else %}
-                    <button disabled class="bg-outline-variant text-white font-bold uppercase py-4 px-8 rounded-2xl flex-1 cursor-not-allowed opacity-50 flex items-center justify-center gap-3">
-                        <span class="material-symbols-outlined">block</span>
-                        <span class="text-label-md">Épuisé</span>
+                {% elif not book.pdf_file %}
+                    <button disabled class="bg-outline-variant text-white font-bold uppercase py-3.5 sm:py-4 px-4 sm:px-8 rounded-2xl flex-1 cursor-not-allowed opacity-50 flex items-center justify-center gap-2 sm:gap-3">
+                        <span class="material-symbols-outlined text-[20px] sm:text-[24px]">block</span>
+                        <span class="text-[11px] sm:text-label-md">Épuisé</span>
                     </button>
                 {% endif %}
             {% endif %}
             
             {% if book.pdf_file %}
                 <div class="relative flex-1">
-                    <a href="{% url 'books:read_book' book.slug %}" class="bg-secondary hover:brightness-110 text-white font-bold uppercase py-4 px-8 rounded-2xl w-full transition-all active:scale-95 shadow-lg shadow-secondary/30 flex items-center justify-center gap-3">
-                        <span class="material-symbols-outlined">menu_book</span>
-                        <span class="text-label-md">{% if reading_progress and reading_progress.last_page > 1 %}Reprendre{% else %}Lire en ligne{% endif %}</span>
+                    <a href="{% url 'books:read_book' book.slug %}" class="bg-secondary hover:brightness-110 text-white font-bold uppercase py-3.5 sm:py-4 px-4 sm:px-8 rounded-2xl w-full transition-all active:scale-95 shadow-lg shadow-secondary/30 flex items-center justify-center gap-2 sm:gap-3">
+                        <span class="material-symbols-outlined text-[20px] sm:text-[24px]">menu_book</span>
+                        <span class="text-[11px] sm:text-label-md">{% if reading_progress and reading_progress.last_page > 1 %}Reprendre{% else %}Lire{% endif %}</span>
                     </a>
                     {% if reading_progress and reading_progress.last_page > 1 %}
-                        <div class="absolute -top-3 -right-2 bg-white text-secondary text-[9px] font-black px-2 py-0.5 rounded-full border border-secondary shadow-sm">
-                            PAGE {{ reading_progress.last_page }}
+                        <div class="absolute -top-2 -right-1 bg-white text-secondary text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full border border-secondary shadow-sm">
+                            P. {{ reading_progress.last_page }}
                         </div>
                     {% endif %}
                 </div>
             {% endif %}
         </div>
         
-        <button onclick="shareBook()" class="w-14 h-14 border-2 border-secondary text-secondary hover:bg-secondary/5 rounded-2xl transition-colors flex items-center justify-center flex-shrink-0 self-center sm:self-auto active:scale-90">
-            <span class="material-symbols-outlined">share</span>
+        <button onclick="shareBook()" class="w-12 h-12 sm:w-14 sm:h-14 border-2 border-secondary text-secondary hover:bg-secondary/5 rounded-2xl transition-colors flex items-center justify-center flex-shrink-0 self-center sm:self-auto active:scale-90">
+            <span class="material-symbols-outlined text-[20px] sm:text-[24px]">share</span>
         </button>
     </div>
 </div>
