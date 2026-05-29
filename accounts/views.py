@@ -159,6 +159,103 @@ def delete_all_notifications(request):
         return redirect('notifications_list')
     return redirect('profile')
 
+import google.generativeai as genai
+import os
+from django.conf import settings
+
+@login_required
+def chat_response(request):
+    """
+    Gère les réponses du chatbot avec mémoire de conversation et expertise métier.
+    """
+    from books.models import Book
+    user_message = request.POST.get('message', '')
+    
+    # 1. Gestion de l'historique (Mémoire de session)
+    if 'chat_history' not in request.session:
+        request.session['chat_history'] = []
+    
+    history = request.session['chat_history']
+    # On garde les 6 derniers messages (3 tours de dialogue) pour ne pas saturer le quota
+    history = history[-6:]
+    
+    # 2. Préparation du contexte du catalogue (Recherche dynamique simplifiée)
+    # On cherche les livres qui pourraient correspondre au message de l'utilisateur
+    from django.db.models import Q
+    search_terms = user_message.split()
+    query = Q()
+    for term in search_terms:
+        if len(term) > 3:
+            query |= Q(title__icontains=term) | Q(author__name__icontains=term) | Q(category__name__icontains=term)
+    
+    relevant_books = Book.objects.filter(is_available=True).filter(query).select_related('author', 'category')[:10]
+    if not relevant_books:
+        relevant_books = Book.objects.filter(is_available=True).select_related('author', 'category').order_by('?')[:5]
+    
+    # On inclut le lien relatif pour que l'IA puisse créer des ancres HTML
+    books_context = "\n".join([f"- {b.title} par {b.author.name} (ID: {b.slug})" for b in relevant_books])
+    
+    # 3. Configuration de Gemini
+    api_key = os.getenv('GOOGLE_API_KEY')
+    if not api_key:
+        bot_reply = "Désolé, l'assistant est en cours de maintenance (Clé API manquante)."
+    else:
+        try:
+            genai.configure(api_key=api_key)
+            models_to_try = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
+            response = None
+            
+            # 4. Prompt Système d'Expertise (Le "Manuel de la Bibliothèque")
+            is_first_message = len(history) == 0
+            system_instruction = f"""
+            Tu es l'assistant EXPERT de 'Estim Library', à Brazzaville.
+            Utilisateur : {request.user.username}. 
+            
+            CONNAISSANCES MÉTIER :
+            - Prêts : 14 jours. PDF : Illimités. Inscription : Gratuite.
+            - Campus : Brazzaville, Pointe-Noire.
+            
+            CATALOGUE ACTUEL (Pertinent pour la question) :
+            {books_context}
+            
+            HISTORIQUE : {history}
+            
+            RÈGLES DE RÉPONSE CRITIQUES :
+            1. {"Dis bonjour pour commencer la discussion." if is_first_message else "NE DIS PLUS BONJOUR."}
+            2. Quand tu cites un livre du catalogue, crée TOUJOURS un lien HTML cliquable comme ceci : <a href='/book/ID/' class='text-primary underline font-bold'>Titre du livre</a> (Remplace ID par le slug fourni).
+            3. Réponds de manière très concise.
+            4. Si tu ne trouves pas le livre, dis-le poliment.
+            """
+            
+            for model_name in models_to_try:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(f"{system_instruction}\n\nNouvelle question de l'utilisateur : {user_message}")
+                    if response and response.text:
+                        break
+                except Exception as e:
+                    print(f"Échec avec {model_name}: {str(e)[:50]}")
+                    continue
+            
+            if response and response.text:
+                bot_reply = response.text
+                # Mise à jour de l'historique
+                history.append(f"Utilisateur: {user_message}")
+                history.append(f"Assistant: {bot_reply}")
+                request.session['chat_history'] = history
+                request.session.modified = True
+            else:
+                bot_reply = "Je suis un peu surchargé en ce moment. Réessayez dans quelques secondes !"
+                
+        except Exception as e:
+            print(f"Erreur Gemini Globale: {e}")
+            bot_reply = "Désolé, je rencontre une petite difficulté technique. Réessayez dans un instant !"
+    
+    return render(request, 'accounts/partials/chat_message.html', {
+        'user_message': user_message,
+        'bot_reply': bot_reply
+    })
+
 @login_required
 def get_unread_notification_count(request):
     """Renvoie juste le nombre de notifications non lues pour HTMX."""
