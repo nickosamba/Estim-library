@@ -15,6 +15,7 @@ urlpatterns = [
     path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
     path('notifications/delete-all/', views.delete_all_notifications, name='delete_all_notifications'),
     path('api/unread-notifications-count/', views.get_unread_notification_count, name='get_unread_notifications_count'),
+    path('api/chat-status/', views.get_chat_status, name='get_chat_status'),
     path('chat/response/', views.chat_response, name='chat_response'),
 
     # Password Reset

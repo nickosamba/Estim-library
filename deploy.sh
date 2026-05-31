@@ -26,6 +26,10 @@ python manage.py collectstatic --noinput
 echo "🛡️ Vérification de la sécurité..."
 python manage.py check --deploy
 
+# 4.5 Indexation IA (Nouveau)
+echo "🧠 Indexation sémantique des livres..."
+python manage.py index_books
+
 # 5. Tests de santé
 echo "🧪 Exécution des tests unitaires..."
 python manage.py test

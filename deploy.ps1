@@ -21,6 +21,10 @@ python manage.py collectstatic --noinput
 Write-Host "Verification de la securite..." -ForegroundColor Yellow
 python manage.py check --deploy
 
+# 4.5 Indexation IA (Nouveau)
+Write-Host "Indexation sémantique des livres..." -ForegroundColor Yellow
+python manage.py index_books
+
 # 5. Tests de sante
 Write-Host "Execution des tests unitaires..." -ForegroundColor Yellow
 python manage.py test

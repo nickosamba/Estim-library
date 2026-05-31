@@ -1,0 +1,22 @@
+<div class="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <!-- Message Utilisateur -->
+    <div class="flex justify-end">
+        <div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm">
+            <p class="text-label-md font-medium leading-relaxed">{{ user_message }}</p>
+        </div>
+    </div>
+
+    <!-- Message Bot -->
+    <div class="flex justify-start">
+        <div class="flex gap-3 max-w-[85%]">
+            <div class="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+                <span class="material-symbols-outlined text-sm">smart_toy</span>
+            </div>
+            <div class="bg-white border border-outline-variant/20 p-4 rounded-2xl rounded-tl-none shadow-sm">
+                <div class="text-label-md font-medium text-on-surface-variant leading-relaxed prose-sm">
+                    {{ bot_reply|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

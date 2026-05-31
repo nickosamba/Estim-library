@@ -62,6 +62,11 @@ class Book(models.Model):
     copies_available = models.PositiveIntegerField(default=1)
     is_available = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False, verbose_name="Coup de cœur (Trésor du Mois)")
+    
+    # Advanced Intelligence Fields
+    embedding = models.JSONField(null=True, blank=True, help_text="Représentation vectorielle pour la recherche sémantique")
+    extracted_text = models.TextField(blank=True, help_text="Texte extrait du PDF pour analyse")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -83,6 +88,47 @@ class Book(models.Model):
     def is_available_globally(self):
         """Checks if the book is available for all campuses."""
         return self.target_campuses.filter(code='all').exists()
+
+    def update_ai_index(self):
+        """Génère l'embedding et extrait le texte du PDF pour ce livre."""
+        import google.generativeai as genai
+        import os
+        from PyPDF2 import PdfReader
+        
+        api_key = os.getenv('GOOGLE_API_KEY')
+        if not api_key:
+            return
+
+        genai.configure(api_key=api_key)
+        
+        # 1. Extraction PDF
+        if self.pdf_file:
+            try:
+                reader = PdfReader(self.pdf_file.path)
+                text = ""
+                for i in range(min(5, len(reader.pages))): # Limite à 5 pages pour l'automatisation
+                    text += reader.pages[i].extract_text() + "\n"
+                self.extracted_text = text
+            except Exception as e:
+                print(f"Erreur PDF ({self.title}): {e}")
+
+        # 2. Embedding
+        try:
+            content = f"Titre: {self.title}\nDescription: {self.description}\nCatégorie: {self.category.name if self.category else ''}"
+            result = genai.embed_content(
+                model="models/gemini-embedding-001",
+                content=content,
+                task_type="retrieval_document"
+            )
+            self.embedding = result['embedding']
+        except Exception as e:
+            print(f"Erreur Embedding ({self.title}): {e}")
+        
+        # On utilise update() pour éviter de déclencher save() en boucle si appelé depuis un signal
+        Book.objects.filter(id=self.id).update(
+            embedding=self.embedding, 
+            extracted_text=self.extracted_text
+        )
 
     def save(self, *args, **kwargs):
         if not self.slug:

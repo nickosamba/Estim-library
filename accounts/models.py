@@ -102,3 +102,49 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} pour {self.recipient.username}"
+
+class ChatSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    # Nouveaux champs pour le Mode Coach
+    is_coaching_mode = models.BooleanField(default=False, verbose_name="Mode Coach activé")
+    current_book_context = models.ForeignKey('books.Book', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Livre en cours de coaching")
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Session de {self.user.username} - {self.updated_at.strftime('%d/%m/%Y %H:%M')}"
+
+class ChatMessage(models.Model):
+    ROLE_CHOICES = (
+        ('user', 'Utilisateur'),
+        ('assistant', 'Assistant'),
+    )
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.role}: {self.content[:50]}..."
+
+class UserPreference(models.Model):
+    """
+    Stocke les préférences et centres d'intérêt de l'utilisateur détectés par le chatbot.
+    Permet une personnalisation à long terme.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    interests = models.JSONField(default=list, blank=True, help_text="Liste des thématiques appréciées")
+    favorite_authors = models.JSONField(default=list, blank=True)
+    last_recommendations = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Préférences de {self.user.username}"

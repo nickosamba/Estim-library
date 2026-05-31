@@ -101,3 +101,21 @@
 - **Pagination Infinie** : Chargement par lots de 20 membres pour garantir la performance sur les gros volumes d'utilisateurs.
 - **Responsive Design Avancé** : Le tableau des membres s'adapte dynamiquement sur mobile en fusionnant les informations (Auteur/Cursus sous le nom) et en masquant les colonnes secondaires.
 - **Distribution Sélective des Alertes** : Les notifications de **Nouvelles Réservations** sont envoyées exclusivement aux utilisateurs ayant le rôle **Bibliothécaire** (`role='librarian'`). L'Administrateur est déchargé de ce flux opérationnel tout en gardant l'accès aux statistiques globales.
+
+### 14. Assistant IA Premium & Mode Coach (Bêta)
+- **STATUT** : DÉPLOYÉ EN BÊTA.
+- **Intelligence Conversationnelle** : Utilisation de Gemini 1.5 avec gestion de l'historique de session pour une mémoire contextuelle réelle.
+- **Recherche Visuelle Enrichie** : Les résultats de recherche sémantique s'affichent sous forme de **Cartes Interactives** avec couverture, titre, auteur et bouton de réservation direct.
+- **Mode Coach Académique** : 
+    - Activation dynamique par l'étudiant ou sur proposition de l'IA via `activate_coach_mode`.
+    - Extraction intelligente du contenu des PDF (RAG) pour répondre précisément aux questions de cours.
+    - Persona pédagogique : le bot devient un tuteur, cite les auteurs et pose des questions de vérification (Quiz).
+- **Gamification intégrée** : Récompense l'assiduité et les bonnes réponses aux quiz par l'attribution de **Points de Score Culturel** via l'outil `add_cultural_points`.
+- **Interface Adaptive** : Le header du chatbot change dynamiquement (Couleur/Titre) selon le mode actif (Normal vs Coach) pour un guidage visuel clair.
+- **Navigation Fluide (Chips)** : Propose des boutons d'action rapide (`🎓 Mode Quiz`, `📝 Résumé`) pour minimiser la saisie clavier.
+
+### 15. Automatisation de l'Intelligence (Indexation)
+- **STATUT** : VALIDÉ ET AUTOMATISÉ.
+- **Indexation par Signaux** : Tout ajout ou modification d'un ouvrage déclenche automatiquement une indexation IA en arrière-plan via un signal Django (`post_save`).
+- **Pipeline IA Autonome** : Le serveur gère l'extraction de texte PDF et la génération d'embeddings sémantiques sans intervention manuelle du bibliothécaire.
+- **Robustesse & Fallback** : Système de fallback automatique entre les différents modèles Gemini en cas de dépassement de quota ou d'indisponibilité.

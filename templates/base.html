@@ -400,6 +400,26 @@
     </nav>
     
     {% block extra_js %}{% endblock %}
+
+    <script>
+        // Fonctions globales pour le Chatbot Premium
+        async function reserveBook(bookId) {
+            const formData = new FormData();
+            formData.append('message', `réserve le livre ID ${bookId}`);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            // Simuler l'envoi d'un message pour déclencher la réservation
+            const chatInput = document.getElementById('chat-input');
+            chatInput.value = `Réserver le livre #${bookId}`;
+            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+        }
+
+        function sendQuickMsg(text) {
+            const chatInput = document.getElementById('chat-input');
+            chatInput.value = text;
+            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+        }
+    </script>
     
     <!-- Chatbot Widget -->
     {% if user.is_authenticated %}
@@ -422,10 +442,13 @@
                         <span class="material-symbols-outlined">smart_toy</span>
                     </div>
                     <div>
-                        <h4 class="font-bold text-label-md tracking-tight">Assistant Estim</h4>
-                        <div class="flex items-center gap-1.5 mt-0.5">
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-bold text-label-md tracking-tight">Assistant Estim</h4>
+                            <span class="bg-white/20 text-[7px] font-black px-1.5 py-0.5 rounded text-white/90 border border-white/10 uppercase tracking-tighter">Bêta</span>
+                        </div>
+                        <div id="chat-status-container" class="flex items-center gap-1.5 mt-0.5">
                             <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                            <span class="text-[9px] font-black uppercase tracking-widest opacity-80">En ligne</span>
+                            <span id="chat-status-text" class="text-[9px] font-black uppercase tracking-widest opacity-80">En ligne</span>
                         </div>
                     </div>
                 </div>
@@ -443,7 +466,7 @@
                         </div>
                         <div class="bg-white border border-outline-variant/20 p-4 rounded-2xl rounded-tl-none shadow-sm">
                             <p class="text-label-md font-medium text-on-surface-variant leading-relaxed">
-                                Bonjour {{ user.username }} ! Je suis votre assistant. Comment puis-je vous aider aujourd'hui ?
+                                Bonjour {{ user.username }} ! Je suis votre assistant Estim (Bêta). Je peux vous aider à trouver des livres, les réserver ou même devenir votre coach académique !
                             </p>
                         </div>
                     </div>
@@ -452,22 +475,18 @@
 
             <!-- Input Area -->
             <div class="p-4 bg-white border-t border-outline-variant/10">
-                <form hx-post="{% url 'chat_response' %}" 
-                      hx-target="#chat-messages" 
-                      hx-swap="beforeend"
-                      hx-on::after-request="this.reset(); document.getElementById('chat-messages').scrollTo({top: 100000, behavior: 'smooth'})"
-                      class="relative">
+                <form id="chat-form" class="relative">
                     {% csrf_token %}
                     <input type="text" 
+                           id="chat-input"
                            name="message" 
                            placeholder="Posez votre question..." 
                            class="w-full bg-surface-container-low border-none rounded-2xl pl-5 pr-14 py-4 text-label-md font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                            required>
-                    <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 group">
-                        <span class="material-symbols-outlined text-sm htmx-indicator-none">send</span>
-                        <!-- Loading Spinner (Visible only during HTMX request) -->
-                        <div class="htmx-indicator hidden">
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <button type="submit" id="chat-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 group">
+                        <span class="material-symbols-outlined text-sm" id="send-icon">send</span>
+                        <div id="chat-loading" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -477,11 +496,123 @@
             </div>
         </div>
 
-        <style>
-            /* Loading states for HTMX */
-            .htmx-request .htmx-indicator { display: block !important; }
-            .htmx-request .htmx-indicator-none { display: none !important; }
-        </style>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const chatForm = document.getElementById('chat-form');
+                const chatInput = document.getElementById('chat-input');
+                const chatMessages = document.getElementById('chat-messages');
+                const sendIcon = document.getElementById('send-icon');
+                const chatLoading = document.getElementById('chat-loading');
+
+                chatForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const message = chatInput.value.trim();
+                    if (!message) return;
+
+                    // Afficher message utilisateur
+                    const userHtml = `
+                        <div class="flex justify-end">
+                            <div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm">
+                                <p class="text-label-md font-medium leading-relaxed">${message}</p>
+                            </div>
+                        </div>`;
+                    chatMessages.insertAdjacentHTML('beforeend', userHtml);
+                    chatInput.value = '';
+                    chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior: 'smooth'});
+
+                    // Préparer message bot (vide)
+                    const botMsgId = 'bot-' + Date.now();
+                    const botHtml = `
+                        <div class="flex justify-start">
+                            <div class="flex gap-3 max-w-[85%]">
+                                <div class="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+                                    <span class="material-symbols-outlined text-sm">smart_toy</span>
+                                </div>
+                                <div class="bg-white border border-outline-variant/20 p-4 rounded-2xl rounded-tl-none shadow-sm">
+                                    <div id="${botMsgId}" class="text-label-md font-medium text-on-surface-variant leading-relaxed prose-sm"></div>
+                                </div>
+                            </div>
+                        </div>`;
+                    chatMessages.insertAdjacentHTML('beforeend', botHtml);
+                    const botDiv = document.getElementById(botMsgId);
+
+                    // UI State
+                    sendIcon.classList.add('hidden');
+                    chatLoading.classList.remove('hidden');
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('message', message);
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                        const response = await fetch("{% url 'chat_response' %}", {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let fullText = "";
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            const chunk = decoder.decode(value, { stream: true });
+                            fullText += chunk;
+                            
+                            // Parser les données de livres en cartes HTML si présentes
+                            let renderedText = fullText.replace(/BOOK_DATA: (.*?) \| (.*?) \| (.*?) \| (.*?) \| (.*?)(?:\n|$)/g, (match, title, author, id, cover, desc) => {
+                                return `
+                                <div class="chat-book-card bg-surface-container-low border border-outline-variant/30 rounded-2xl p-3 my-2 flex gap-3 animate-in fade-in zoom-in duration-300">
+                                    <img src="${cover}" class="w-12 h-16 rounded-md object-cover shadow-sm">
+                                    <div class="flex-grow">
+                                        <p class="text-[11px] font-extrabold line-clamp-1">${title}</p>
+                                        <p class="text-[9px] text-outline italic">${author}</p>
+                                        <button onclick="reserveBook(${id})" class="mt-2 bg-primary text-white text-[8px] font-black px-3 py-1 rounded-full uppercase hover:scale-105 active:scale-95 transition-all">Réserver</button>
+                                    </div>
+                                </div>`;
+                            });
+
+                            botDiv.innerHTML = renderedText;
+                            chatMessages.scrollTo({top: chatMessages.scrollHeight});
+                        }
+                    } catch (err) {
+                        botDiv.innerText = "Désolé, une erreur est survenue.";
+                    } finally {
+                        sendIcon.classList.remove('hidden');
+                        chatLoading.classList.add('hidden');
+                        updateChatStatus(); // Vérifier le mode après chaque message
+                    }
+                });
+
+                // Fonction pour mettre à jour le header (Mode Coach vs Normal)
+                async function updateChatStatus() {
+                    const statusText = document.getElementById('chat-status-text');
+                    const statusDot = document.querySelector('#chat-status-container span');
+                    
+                    try {
+                        const response = await fetch("{% url 'get_chat_status' %}");
+                        const data = await response.json();
+                        
+                        if (data.is_coaching_mode) {
+                            statusText.innerHTML = `Mode Coach : <span class="text-white">${data.book_title}</span>`;
+                            statusText.classList.remove('opacity-80');
+                            statusText.classList.add('text-secondary-container', 'font-black');
+                            statusDot.classList.replace('bg-success', 'bg-secondary-container');
+                        } else {
+                            statusText.innerText = "En ligne";
+                            statusText.classList.add('opacity-80');
+                            statusText.classList.remove('text-secondary-container', 'font-black');
+                            statusDot.classList.replace('bg-secondary-container', 'bg-success');
+                        }
+                    } catch (err) { console.error("Erreur status chat:", err); }
+                }
+
+                // Appeler au chargement si la fenêtre est ouverte
+                updateChatStatus();
+            });
+        </script>
 
         <!-- Toggle Button -->
         <button @click="open = !open" 
