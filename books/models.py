@@ -91,6 +91,8 @@ class Book(models.Model):
 
     def update_ai_index(self):
         """Génère l'embedding et extrait le texte du PDF pour ce livre."""
+        import warnings
+        warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
         import google.generativeai as genai
         import os
         from PyPDF2 import PdfReader
@@ -127,10 +129,18 @@ class Book(models.Model):
             print(f"Erreur Embedding ({self.title}): {e}")
         
         # On utilise update() pour éviter de déclencher save() en boucle si appelé depuis un signal
-        Book.objects.filter(id=self.id).update(
-            embedding=self.embedding, 
-            extracted_text=self.extracted_text
-        )
+        try:
+            Book.objects.filter(id=self.id).update(
+                embedding=self.embedding, 
+                extracted_text=self.extracted_text
+            )
+        except Exception as e:
+            # En SQLite, si la base est verrouillée, on ignore silencieusement ici 
+            # car c'est une tâche de fond non-critique (on pourra ré-indexer plus tard)
+            if "locked" in str(e).lower():
+                pass 
+            else:
+                print(f"Erreur mise à jour index IA ({self.title}): {e}")
 
     def save(self, *args, **kwargs):
         if not self.slug:

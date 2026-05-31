@@ -160,6 +160,8 @@ def delete_all_notifications(request):
         return redirect('notifications_list')
     return redirect('profile')
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
 import google.generativeai as genai
 import os
 from django.conf import settings

@@ -1,13 +1,10 @@
 import os
-import django
 import sys
+import warnings
 from pathlib import Path
 
-# Setup Django
-BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(BASE_DIR))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'library_project.settings')
-django.setup()
+# Ignorer les avertissements de dépréciation de google-generativeai pour éviter de polluer les logs
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
 
 from django.core.management.base import BaseCommand
 from books.models import Book
@@ -15,6 +12,8 @@ import google.generativeai as genai
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
 
+# Setup BASE_DIR pour load_dotenv
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 class Command(BaseCommand):
