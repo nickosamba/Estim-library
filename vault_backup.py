@@ -26,34 +26,6 @@ def create_backup():
     else:
         print("⚠️ Attention : db.sqlite3 introuvable dans le dossier racine.")
 
-    # 3. Exportation des données Django (Format JSON pour la portabilité)
-    json_dump_path = CURRENT_BACKUP_DIR / "full_data_export.json"
-    print("⏳ Génération de l'export JSON (dumpdata)...")
-    try:
-        # Optimisation pour Alwaysdata : on exclut les tables lourdes (sessions, logs, historique chat)
-        # et on retire l'indentation pour économiser de la RAM
-        cmd = [
-            'python', 'manage.py', 'dumpdata', 
-            '--exclude', 'contenttypes', 
-            '--exclude', 'auth.Permission', 
-            '--exclude', 'sessions',
-            '--exclude', 'admin.logentry',
-            '--exclude', 'accounts.ChatMessage',  # Historique chat potentiellement lourd
-            '--format', 'json'
-        ]
-        
-        result = subprocess.run(cmd, capture_output=True, shell=False)
-        
-        if result.returncode == 0:
-            with open(json_dump_path, 'wb') as f:
-                f.write(result.stdout)
-            print("✅ Export JSON terminé avec succès.")
-        else:
-            print(f"❌ Échec dumpdata (Code {result.returncode}).")
-            # Fallback : on continue sans le JSON car le .sqlite3 est déjà là
-    except Exception as e:
-        print(f"⚠️ Note : L'export JSON a été ignoré ({e}). La sauvegarde physique .sqlite3 reste valide.")
-
     # 4. Sauvegarde des fichiers MÉDIAS (PDF et Images)
     media_dir = BASE_DIR / "media"
     if media_dir.exists():
