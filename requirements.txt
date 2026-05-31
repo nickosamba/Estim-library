@@ -1,43 +1,27 @@
 # Core Framework
 Django==5.2.9
-django-decouple==2.1
-python-decouple==3.8
 asgiref==3.11.0
 sqlparse==0.5.4
 
-# Database & Production
-psycopg2-binary==2.9.12
-dj-database-url==3.1.2
+# Production
 gunicorn==26.0.0
 whitenoise==6.12.0
 
-# UI & Admin (Unfold & Tweaks)
-django-unfold==0.81.0
-django-widget-tweaks==1.5.1
-
-# Authentication & Security
-django-allauth==65.16.1
-cryptography
-PyJWT==2.12.1
-
 # Utilities & Data
 requests==2.31.0
-beautifulsoup4==4.12.2
 openpyxl
 Pillow
 python-dotenv==1.2.2
 python-dateutil==2.8.2
 pytz==2023.3.post1
 
-# PDF Generation & Handling
+# PDF Handling
 PyPDF2==3.0.1
-fpdf==1.7.2
-weasyprint
 
 # AI & Data Science
 google-generativeai==0.8.3
 numpy==1.26.4
 
-# Internationalization & Social
-django-countries==8.2.0
-django-cors-headers==4.9.0
+# Storage & Cloudflare R2
+django-storages[s3]==1.14.5
+boto3==1.34.0

@@ -59,6 +59,7 @@ class User(AbstractUser):
         1. Validation des champs.
         2. Gestion stricte des accès staff (seul le superuser accède à /admin/).
         3. Assignation automatique du département via la filière choisie.
+        4. Optimisation de l'image de profil (WebP + Redimensionnement).
         """
         self.full_clean()
         
@@ -73,6 +74,29 @@ class User(AbstractUser):
         # Automatisation du département pour éviter les erreurs de saisie
         if self.filiere:
             self.department = self.filiere.department
+            
+        # Optimisation Image Profil
+        if self.profile_picture:
+            from PIL import Image
+            import io
+            from django.core.files.base import ContentFile
+            
+            img = Image.open(self.profile_picture)
+            
+            # Conversion en RGB si nécessaire (pour support WebP/JPEG)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+                
+            # Redimensionnement max 300x300 pour les profils
+            if img.height > 300 or img.width > 300:
+                img.thumbnail((300, 300))
+                
+            buffer = io.BytesIO()
+            img.save(buffer, format='WEBP', quality=85)
+            
+            # Nouveau nom de fichier avec extension .webp
+            filename = f"{os.path.splitext(self.profile_picture.name)[0]}.webp"
+            self.profile_picture.save(filename, ContentFile(buffer.getvalue()), save=False)
             
         super().save(*args, **kwargs)
 

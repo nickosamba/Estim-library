@@ -12,15 +12,22 @@ python vault_backup.py
 
 # 1. Mise à jour des dépendances
 echo "📦 Installation des dépendances..."
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
 # 2. Migrations de la base de données
 echo "🗄️ Migration de la base de données..."
 python manage.py migrate --noinput
 
-# 3. Collecte des fichiers statiques
-echo "🎨 Collecte des fichiers statiques..."
+# 3. Collecte et compression des fichiers statiques
+echo "🎨 Collecte et compression des fichiers statiques..."
 python manage.py collectstatic --noinput
+
+# 3.5 Vérification de la connexion au stockage Cloud R2 (si activé)
+if grep -q "USE_R2=True" .env; then
+    echo "☁️  Stockage Cloud R2 détecté, vérification de la configuration..."
+    python manage.py check
+fi
 
 # 4. Vérification de la configuration
 echo "🛡️ Vérification de la sécurité..."

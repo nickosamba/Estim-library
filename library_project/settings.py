@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
+    'storages',
     # Apps locales
     'accounts',
     'books',
@@ -109,7 +110,39 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Configuration des Stockages (Django 4.2+)
+USE_R2 = os.getenv('USE_R2', 'False') == 'True'
+
+if USE_R2:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "access_key": os.getenv('R2_ACCESS_KEY_ID'),
+                "secret_key": os.getenv('R2_SECRET_ACCESS_KEY'),
+                "bucket_name": os.getenv('R2_BUCKET_NAME', 'bibliotheque'),
+                "endpoint_url": os.getenv('R2_ENDPOINT_URL'),
+                "region_name": "auto",
+                "default_acl": None,
+                "querystring_auth": True,  # Active les URLs signées (Mode PRIVÉ)
+                "querystring_expire": 3600, # Expiration après 1 heure
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
