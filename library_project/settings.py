@@ -80,8 +80,9 @@ WSGI_APPLICATION = 'library_project.wsgi.application'
 # Database Configuration
 # Use DATABASE_URL for Production (MySQL) or fallback to SQLite for Local
 DATABASE_URL = os.getenv('DATABASE_URL')
+IS_TESTING = any(arg in sys.argv for arg in ['test', 'pytest', 'test_coverage'])
 
-if DATABASE_URL:
+if DATABASE_URL and not IS_TESTING:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -90,6 +91,8 @@ if DATABASE_URL:
         )
     }
 else:
+    # Utilise SQLite pour le développement local OU pour les tests (même en prod)
+    # Cela évite les erreurs de permission de création de base 'test_...' sur Alwaysdata
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
