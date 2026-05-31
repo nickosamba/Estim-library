@@ -16,7 +16,7 @@
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     <meta property="og:title" content="{% block og_title %}Estim Library - Excellence Numérique{% endblock %}">
     <meta property="og:description" content="Accédez à une collection unique d'ouvrages numériques avec une expérience de lecture premium.">
-    <meta property="og:image" content="{% static 'icons/og-image.jpg' %}">
+    <meta property="og:image" content="{% static 'icons/apple-touch-icon.png' %}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
@@ -449,6 +449,7 @@
                         <div id="chat-status-container" class="flex items-center gap-1.5 mt-0.5">
                             <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                             <span id="chat-status-text" class="text-[9px] font-black uppercase tracking-widest opacity-80">En ligne</span>
+                            <button id="exit-coach-btn" onclick="exitCoachMode()" class="hidden ml-2 bg-white/20 hover:bg-white/30 text-[8px] font-black px-2 py-0.5 rounded-full uppercase transition-all border border-white/10">Quitter</button>
                         </div>
                     </div>
                 </div>
@@ -590,6 +591,8 @@
                 async function updateChatStatus() {
                     const statusText = document.getElementById('chat-status-text');
                     const statusDot = document.querySelector('#chat-status-container span');
+                    const exitBtn = document.getElementById('exit-coach-btn');
+                    const chatHeader = document.querySelector('.bg-primary.text-white');
                     
                     try {
                         const response = await fetch("{% url 'get_chat_status' %}");
@@ -600,14 +603,44 @@
                             statusText.classList.remove('opacity-80');
                             statusText.classList.add('text-secondary-container', 'font-black');
                             statusDot.classList.replace('bg-success', 'bg-secondary-container');
+                            exitBtn.classList.remove('hidden');
+                            if (chatHeader) chatHeader.classList.replace('bg-primary', 'bg-secondary');
                         } else {
                             statusText.innerText = "En ligne";
                             statusText.classList.add('opacity-80');
                             statusText.classList.remove('text-secondary-container', 'font-black');
                             statusDot.classList.replace('bg-secondary-container', 'bg-success');
+                            exitBtn.classList.add('hidden');
+                            if (chatHeader) chatHeader.classList.replace('bg-secondary', 'bg-primary');
                         }
                     } catch (err) { console.error("Erreur status chat:", err); }
                 }
+
+                window.exitCoachMode = async function() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('message', 'Désactive le mode coach');
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                        
+                        await fetch("{% url 'chat_response' %}", {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        updateChatStatus();
+                        
+                        // Ajouter un message système local pour confirmer
+                        const chatMessages = document.getElementById('chat-messages');
+                        const confirmHtml = `
+                            <div class="flex justify-start">
+                                <div class="bg-surface-container-low border border-outline-variant/20 p-3 rounded-xl max-w-[85%] italic text-[10px] text-outline text-center w-full">
+                                    Mode Coach désactivé. Retour à l'assistant normal.
+                                </div>
+                            </div>`;
+                        chatMessages.insertAdjacentHTML('beforeend', confirmHtml);
+                        chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior: 'smooth'});
+                    } catch (err) { console.error("Erreur sortie mode coach:", err); }
+                };
 
                 // Appeler au chargement si la fenêtre est ouverte
                 updateChatStatus();

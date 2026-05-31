@@ -104,11 +104,13 @@ class Book(models.Model):
         # 1. Extraction PDF
         if self.pdf_file:
             try:
-                reader = PdfReader(self.pdf_file.path)
-                text = ""
-                for i in range(min(5, len(reader.pages))): # Limite à 5 pages pour l'automatisation
-                    text += reader.pages[i].extract_text() + "\n"
-                self.extracted_text = text
+                # Utilisation de .open() pour compatibilité S3/R2
+                with self.pdf_file.open('rb') as f:
+                    reader = PdfReader(f)
+                    text = ""
+                    for i in range(min(5, len(reader.pages))): # Limite à 5 pages pour l'automatisation
+                        text += reader.pages[i].extract_text() + "\n"
+                    self.extracted_text = text
             except Exception as e:
                 print(f"Erreur PDF ({self.title}): {e}")
 
@@ -134,6 +136,34 @@ class Book(models.Model):
         if not self.slug:
             from django.utils.text import slugify
             self.slug = slugify(self.title)
+            
+        # Optimisation Couverture (WebP + Redimensionnement)
+        if self.cover_image:
+            from PIL import Image
+            import io
+            from django.core.files.base import ContentFile
+            import os
+
+            try:
+                img = Image.open(self.cover_image)
+                
+                # Conversion en RGB si nécessaire
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                    
+                # Redimensionnement max 800px pour les couvertures
+                if img.height > 800 or img.width > 800:
+                    img.thumbnail((800, 800))
+                    
+                buffer = io.BytesIO()
+                img.save(buffer, format='WEBP', quality=80)
+                
+                # Nouveau nom de fichier basé sur le slug
+                filename = f"{self.slug}.webp"
+                self.cover_image.save(filename, ContentFile(buffer.getvalue()), save=False)
+            except Exception as e:
+                print(f"Erreur optimisation image ({self.title}): {e}")
+
         super().save(*args, **kwargs)
 
     @property

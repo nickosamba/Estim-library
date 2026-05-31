@@ -35,14 +35,15 @@ class Command(BaseCommand):
             # 1. Extraction de texte si PDF présent
             if book.pdf_file and not book.extracted_text:
                 try:
-                    reader = PdfReader(book.pdf_file.path)
-                    text = ""
-                    # On limite à 10 pages pour ne pas exploser le contexte
-                    max_pages = min(10, len(reader.pages))
-                    for i in range(max_pages):
-                        text += reader.pages[i].extract_text() + "\n"
-                    book.extracted_text = text
-                    self.stdout.write(f"  - Texte extrait ({len(text)} caractères)")
+                    with book.pdf_file.open('rb') as f:
+                        reader = PdfReader(f)
+                        text = ""
+                        # On limite à 10 pages pour ne pas exploser le contexte
+                        max_pages = min(10, len(reader.pages))
+                        for i in range(max_pages):
+                            text += reader.pages[i].extract_text() + "\n"
+                        book.extracted_text = text
+                        self.stdout.write(f"  - Texte extrait ({len(text)} caractères)")
                 except Exception as e:
                     self.stderr.write(f"  - Erreur extraction PDF: {e}")
 

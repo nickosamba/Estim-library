@@ -51,8 +51,10 @@ self.addEventListener('fetch', (event) => {
       return cache.match(event.request).then((cachedResponse) => {
         const fetchedResponse = fetch(event.request).then((networkResponse) => {
           // Ne mettre en cache que les succès et éviter les fichiers média/PDF volumineux
-          const isPdf = event.request.url.endsWith('.pdf');
-          const isMedia = event.request.url.includes('/media/');
+          // Support des URLs signées R2 (extraction du chemin avant les paramètres ?)
+          const urlObj = new URL(event.request.url);
+          const isPdf = urlObj.pathname.endsWith('.pdf');
+          const isMedia = urlObj.pathname.includes('/media/') || urlObj.hostname.includes('cloudflarestorage.com');
           
           if (networkResponse.status === 200 && !isPdf && !isMedia) {
             cache.put(event.request, networkResponse.clone());
